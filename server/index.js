@@ -21,7 +21,19 @@ import logoRouter from './route/logo.route.js';
 import siteSettingsRouter from './route/siteSettings.route.js';
 
 const app = express();
-app.use(cors());
+
+// CORS configuration to allow requests from Vercel frontend and localhost
+app.use(cors({
+    origin: [
+        "https://cs-4800-project-alisha-niraj.vercel.app",
+        "http://localhost:5173", // Vite default port
+        "http://localhost:3000", // CRA default port
+        "http://localhost:5174" // Alternative Vite port
+    ],
+    methods: "GET,POST,PUT,DELETE,OPTIONS",
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.options('*', cors())
 
 
