@@ -6,6 +6,7 @@ import Badge from "../../components/Badge";
 import { FaAngleUp } from "react-icons/fa6";
 import { fetchDataFromApi } from "../../utils/api";
 import Pagination from "@mui/material/Pagination";
+import { formatPrice } from "../../utils/currency";
 
 const Orders = () => {
   const [isOpenOrderdProduct, setIsOpenOrderdProduct] = useState(null);
@@ -230,9 +231,9 @@ const Orders = () => {
                                                   {item?.quantity}
                                                 </td>
 
-                                                <td className="px-6 py-4 font-[500]">{item?.price?.toLocaleString('en-US', { style: 'currency', currency: 'INR' })}</td>
+                                                <td className="px-6 py-4 font-[500]">{formatPrice(item?.price)}</td>
 
-                                                <td className="px-6 py-4 font-[500]">{(item?.price * item?.quantity)?.toLocaleString('en-US', { style: 'currency', currency: 'INR' })}</td>
+                                                <td className="px-6 py-4 font-[500]">{formatPrice(item?.price * item?.quantity)}</td>
                                               </tr>
                                             )
                                           })

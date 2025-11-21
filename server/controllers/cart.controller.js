@@ -14,10 +14,81 @@ export const addToCartItemController = async (request, response) => {
         }
 
 
-        const checkItemCart = await CartProductModel.findOne({
+        // Normalize empty strings to null for consistent matching
+        const normalizedSize = (size && size.trim() !== '') ? size.trim() : null;
+        const normalizedWeight = (weight && weight.trim() !== '') ? weight.trim() : null;
+        const normalizedRam = (ram && ram.trim() !== '') ? ram.trim() : null;
+
+        // Build query to match exact variant combination
+        // Check for items with same productId AND exact same variant combination (size, weight, ram)
+        const query = {
             userId: userId,
             productId: productId
-        })
+        };
+
+        // Add variant fields - match exact values
+        // For empty/null values, use $in to match null, empty string, or use $or for $exists: false
+        if (normalizedSize !== null) {
+            query.size = normalizedSize;
+        } else {
+            // Match null, empty string, or undefined - products without size
+            query.$or = [
+                { size: null },
+                { size: '' },
+                { size: { $exists: false } }
+            ];
+        }
+
+        // Handle weight - combine with size condition using $and
+        if (normalizedWeight !== null) {
+            query.weight = normalizedWeight;
+        } else {
+            const weightCondition = {
+                $or: [
+                    { weight: null },
+                    { weight: '' },
+                    { weight: { $exists: false } }
+                ]
+            };
+            
+            if (query.$or) {
+                // Combine size and weight conditions using $and
+                query.$and = [
+                    { $or: query.$or },
+                    weightCondition
+                ];
+                delete query.$or;
+            } else {
+                query.$or = weightCondition.$or;
+            }
+        }
+
+        // Handle ram - combine with previous conditions
+        if (normalizedRam !== null) {
+            query.ram = normalizedRam;
+        } else {
+            const ramCondition = {
+                $or: [
+                    { ram: null },
+                    { ram: '' },
+                    { ram: { $exists: false } }
+                ]
+            };
+            
+            if (query.$and) {
+                query.$and.push(ramCondition);
+            } else if (query.$or) {
+                query.$and = [
+                    { $or: query.$or },
+                    ramCondition
+                ];
+                delete query.$or;
+            } else {
+                query.$or = ramCondition.$or;
+            }
+        }
+
+        const checkItemCart = await CartProductModel.findOne(query)
 
         if (checkItemCart) {
             return response.status(400).json({
@@ -39,9 +110,9 @@ export const addToCartItemController = async (request, response) => {
             userId:userId,
             brand:brand,
             discount:discount,
-            size:size,
-            weight:weight,
-            ram:ram
+            size:normalizedSize, // Use normalized values for consistency
+            weight:normalizedWeight,
+            ram:normalizedRam
         })
 
         const save = await cartItem.save();

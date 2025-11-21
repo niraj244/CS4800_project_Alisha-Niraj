@@ -72,9 +72,9 @@ const OrderConfirmationEmail = (username, orders) => {
              <tr>
         <td>${product?.productTitle}</td>
                 <td>${product?.quantity}</td>
-                        <td>${product?.subTotal?.toLocaleString("en-US", {
-            style: "currency",
-            currency: "INR",
+                        <td>NPR ${product?.subTotal?.toLocaleString("en-US", {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
         })}</td>
         </tr>
                     `
@@ -85,7 +85,7 @@ const OrderConfirmationEmail = (username, orders) => {
                      <td colspan={1}></td>
                         <td colspan={2}>Total</td>
                         <td colspan={1}>
-                            ${(orders?.products?.length !== 0
+                            NPR ${(orders?.products?.length !== 0
             ? orders?.products
                 ?.map(
                     (item) =>
@@ -94,8 +94,8 @@ const OrderConfirmationEmail = (username, orders) => {
                 .reduce((total, value) => total + value, 0)
             : 0
         )?.toLocaleString("en-US", {
-            style: "currency",
-            currency: "INR",
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
         })}
                         </td>
                     </tr>    

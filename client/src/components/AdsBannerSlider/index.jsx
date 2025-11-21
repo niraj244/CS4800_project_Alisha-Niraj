@@ -16,7 +16,7 @@ const AdsBannerSlider = (props) => {
     <div className="py-5 w-full">
       <Swiper
         slidesPerView={props.items}
-        spaceBetween={10}
+        spaceBetween={8}
         navigation={context?.windowWidth < 992 ? false : true}
         modules={[Navigation, FreeMode]}
         freeMode={true}
@@ -31,11 +31,11 @@ const AdsBannerSlider = (props) => {
           },
           750: {
             slidesPerView: 3,
-            spaceBetween: 5,
+            spaceBetween: 8,
           },
           1100: {
             slidesPerView: 4,
-            spaceBetween: 5,
+            spaceBetween: 8,
           },
         }}
         className="smlBtn"

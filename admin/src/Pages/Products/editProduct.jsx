@@ -52,8 +52,6 @@ const EditProduct = () => {
     const [productCat, setProductCat] = React.useState('');
     const [productSubCat, setProductSubCat] = React.useState('');
     const [productFeatured, setProductFeatured] = React.useState('');
-    const [productRams, setProductRams] = React.useState([]);
-    const [productRamsData, setProductRamsData] = React.useState([]);
     const [productWeight, setProductWeight] = React.useState([]);
     const [productWeightData, setProductWeightData] = React.useState([]);
     const [productSize, setProductSize] = React.useState([]);
@@ -66,6 +64,7 @@ const EditProduct = () => {
     const [bannerPreviews, setBannerPreviews] = useState([]);
 
     const [checkedSwitch, setCheckedSwitch] = useState(false);
+    const [hasDiscount, setHasDiscount] = useState(false);
 
     const history = useNavigate();
 
@@ -73,13 +72,6 @@ const EditProduct = () => {
 
 
     useEffect(() => {
-
-        fetchDataFromApi("/api/product/productRAMS/get").then((res) => {
-            if (res?.error === false) {
-                setProductRamsData(res?.data);
-            }
-        })
-
         fetchDataFromApi("/api/product/productWeight/get").then((res) => {
             if (res?.error === false) {
                 setProductWeightData(res?.data);
@@ -126,10 +118,13 @@ const EditProduct = () => {
             setProductSubCat(res?.product?.subCatId);
             setProductThirdLavelCat(res?.product?.thirdsubCatId);
             setProductFeatured(res?.product?.isFeatured)
-            setProductRams(res?.product?.productRam)
             setProductSize(res?.product?.size)
             setProductWeight(res?.product?.productWeight);
             setCheckedSwitch(res?.product?.isDisplayOnHomeBanner)
+            
+            // Set discount toggle based on whether discount exists and is > 0
+            const discountValue = parseFloat(res?.product?.discount) || 0;
+            setHasDiscount(discountValue > 0);
 
             setPreviews(res?.product?.images);
             setBannerPreviews(res?.product?.bannerimages);
@@ -172,19 +167,6 @@ const EditProduct = () => {
     const handleChangeProductFeatured = (event) => {
         setProductFeatured(event.target.value);
         formFields.isFeatured = event.target.value
-    };
-
-    const handleChangeProductRams = (event) => {
-        const {
-            target: { value },
-        } = event;
-        setProductRams(
-            // On autofill we get a stringified value.
-            typeof value === "string" ? value.split(",") : value
-        );
-
-        formFields.productRam = value;
-
     };
 
     const handleChangeProductWeight = (event) => {
@@ -329,11 +311,21 @@ const EditProduct = () => {
         }
 
 
-        if (formFields?.oldPrice === "") {
-            context.alertBox("error", "Please enter product old Price");
-            return false;
-        }
+        if (hasDiscount) {
+            if (formFields?.oldPrice === "") {
+                context.alertBox("error", "Please enter product old Price");
+                return false;
+            }
 
+            if (formFields?.discount === "") {
+                context.alertBox("error", "Please enter product discount");
+                return false;
+            }
+        } else {
+            // If no discount, set discount to 0 and oldPrice to price
+            formFields.discount = 0;
+            formFields.oldPrice = formFields.price;
+        }
 
         if (formFields?.countInStock === "") {
             context.alertBox("error", "Please enter  product stock");
@@ -343,12 +335,6 @@ const EditProduct = () => {
 
         if (formFields?.brand === "") {
             context.alertBox("error", "Please enter product brand");
-            return false;
-        }
-
-
-        if (formFields?.discount === "") {
-            context.alertBox("error", "Please enter product discount");
             return false;
         }
 
@@ -521,11 +507,41 @@ const EditProduct = () => {
                             <input type="number" className='w-full h-[40px] border border-[rgba(0,0,0,0.2)] focus:outline-none focus:border-[rgba(0,0,0,0.4)] rounded-sm p-3 text-sm ' name="price" value={formFields.price} onChange={onChangeInput} />
                         </div>
 
-
-                        <div className='col'>
-                            <h3 className='text-[14px] font-[500] mb-1  text-black'>Product Old Price</h3>
-                            <input type="number" className='w-full h-[40px] border border-[rgba(0,0,0,0.2)] focus:outline-none focus:border-[rgba(0,0,0,0.4)] rounded-sm p-3 text-sm ' name="oldPrice" value={formFields.oldPrice} onChange={onChangeInput} />
+                        <div className='col flex items-center gap-3'>
+                            <h3 className='text-[14px] font-[500] mb-1 text-black'>Add Discount</h3>
+                            <Switch
+                                checked={hasDiscount}
+                                onChange={(e) => {
+                                    setHasDiscount(e.target.checked);
+                                    if (!e.target.checked) {
+                                        formFields.discount = 0;
+                                        formFields.oldPrice = formFields.price;
+                                    }
+                                }}
+                                sx={{
+                                    '& .MuiSwitch-switchBase.Mui-checked': {
+                                        color: '#FFA239',
+                                    },
+                                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                        backgroundColor: '#FFA239',
+                                    },
+                                }}
+                            />
                         </div>
+
+                        {hasDiscount && (
+                            <>
+                                <div className='col'>
+                                    <h3 className='text-[14px] font-[500] mb-1  text-black'>Product Old Price</h3>
+                                    <input type="number" className='w-full h-[40px] border border-[rgba(0,0,0,0.2)] focus:outline-none focus:border-[rgba(0,0,0,0.4)] rounded-sm p-3 text-sm ' name="oldPrice" value={formFields.oldPrice} onChange={onChangeInput} />
+                                </div>
+
+                                <div className='col'>
+                                    <h3 className='text-[14px] font-[500] mb-1 text-black'>Product Discount (%)</h3>
+                                    <input type="number" className='w-full h-[40px] border border-[rgba(0,0,0,0.2)] focus:outline-none focus:border-[rgba(0,0,0,0.4)] rounded-sm p-3 text-sm ' name="discount" value={formFields.discount} onChange={onChangeInput} min="0" max="100" />
+                                </div>
+                            </>
+                        )}
 
                         <div className='col'>
                             <h3 className='text-[14px] font-[500] mb-1 text-black'>Is Featured?</h3>
@@ -556,36 +572,7 @@ const EditProduct = () => {
                         </div>
 
 
-                        <div className='col'>
-                            <h3 className='text-[14px] font-[500] mb-1 text-black'>Product Discount</h3>
-                            <input type="number" className='w-full h-[40px] border border-[rgba(0,0,0,0.2)] focus:outline-none focus:border-[rgba(0,0,0,0.4)] rounded-sm p-3 text-sm ' name="discount" value={formFields.discount} onChange={onChangeInput} />
-                        </div>
 
-
-                        <div className='col'>
-                            <h3 className='text-[14px] font-[500] mb-1 text-black'>Product RAMS</h3>
-                            {
-                                productRamsData?.length !== 0 &&
-                                <Select
-                                    multiple
-                                    labelId="demo-simple-select-label"
-                                    id="productCatDrop"
-                                    size="small"
-                                    className='w-full'
-                                    value={productRams}
-                                    label="Category"
-                                    onChange={handleChangeProductRams}
-                                >
-                                    {
-                                        productRamsData?.map((item, index) => {
-                                            return <MenuItem key={index} value={item?.name}>{item.name}</MenuItem>
-                                        })
-                                    }
-
-
-                                </Select>
-                            }
-                        </div>
 
                         <div className='col'>
                             <h3 className='text-[14px] font-[500] mb-1 text-black'>Product Weight</h3>

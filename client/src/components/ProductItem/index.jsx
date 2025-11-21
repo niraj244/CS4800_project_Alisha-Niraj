@@ -14,6 +14,7 @@ import { deleteData, editData, postData } from "../../utils/api";
 import CircularProgress from '@mui/material/CircularProgress';
 import { MdClose } from "react-icons/md";
 import { IoMdHeart } from "react-icons/io";
+import { formatPrice } from "../../utils/currency";
 
 
 
@@ -22,6 +23,7 @@ const ProductItem = (props) => {
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
   const [isAddedInMyList, setIsAddedInMyList] = useState(false);
+  const [isInCompare, setIsInCompare] = useState(false);
   const [cartItem, setCartItem] = useState([]);
 
   const [activeTab, setActiveTab] = useState(null);
@@ -115,6 +117,11 @@ const ProductItem = (props) => {
     }
 
   }, [context?.cartData]);
+
+  useEffect(() => {
+    const isInCompareList = context?.compareData?.some(item => item._id === props?.item?._id);
+    setIsInCompare(isInCompareList || false);
+  }, [context?.compareData, props?.item?._id]);
 
 
   const minusQty = () => {
@@ -277,9 +284,11 @@ const ProductItem = (props) => {
         }
 
 
-        <span className="discount flex items-center absolute top-[10px] left-[10px] z-50 bg-primary text-white rounded-lg p-1 text-[12px] font-[500]">
-          {props?.item?.discount}%
-        </span>
+        {props?.item?.discount > 0 && (
+          <span className="discount flex items-center absolute top-[10px] left-[10px] z-50 bg-primary text-white rounded-lg p-1 text-[12px] font-[500]">
+            {props?.item?.discount}%
+          </span>
+        )}
 
         <div className="actions absolute top-[-20px] right-[5px] z-50 flex items-center gap-2 flex-col w-[50px] transition-all duration-300 group-hover:top-[15px] opacity-0 group-hover:opacity-100">
 
@@ -287,8 +296,17 @@ const ProductItem = (props) => {
             <MdZoomOutMap className="text-[18px] !text-black group-hover:text-white hover:!text-white" />
           </Button>
 
-          <Button className="!w-[35px] !h-[35px] !min-w-[35px] !rounded-full !bg-white  text-black hover:!bg-primary hover:text-white group">
-            <IoGitCompareOutline className="text-[18px] !text-black group-hover:text-white hover:!text-white" />
+          <Button 
+            className={`!w-[35px] !h-[35px] !min-w-[35px] !rounded-full !bg-white text-black hover:!bg-primary hover:text-white group ${isInCompare ? '!bg-primary' : ''}`}
+            onClick={() => {
+              if (isInCompare) {
+                context?.removeFromCompare(props?.item?._id);
+              } else {
+                context?.addToCompare(props?.item);
+              }
+            }}
+          >
+            <IoGitCompareOutline className={`text-[18px] ${isInCompare ? '!text-white' : '!text-black group-hover:text-white hover:!text-white'}`} />
           </Button>
 
           <Button className={`!w-[35px] !h-[35px] !min-w-[35px] !rounded-full !bg-white  text-black hover:!bg-primary hover:text-white group`}
@@ -319,12 +337,20 @@ const ProductItem = (props) => {
         <Rating name="size-small" defaultValue={props?.item?.rating} size="small" readOnly />
 
         <div className="flex items-center gap-4 justify-between">
-          <span className="oldPrice line-through text-gray-500 text-[12px] lg:text-[14px] font-[500]">
-            {props?.item?.oldPrice?.toLocaleString('en-US', { style: 'currency', currency: 'INR' })}
-          </span>
-          <span className="price text-primary text-[12px] lg:text-[14px]  font-[600]">
-            {props?.item?.price?.toLocaleString('en-US', { style: 'currency', currency: 'INR' })}
-          </span>
+          {props?.item?.discount > 0 ? (
+            <>
+              <span className="oldPrice line-through text-gray-500 text-[12px] lg:text-[14px] font-[500]">
+                {formatPrice(props?.item?.oldPrice)}
+              </span>
+              <span className="price text-primary text-[12px] lg:text-[14px]  font-[600]">
+                {formatPrice(props?.item?.price)}
+              </span>
+            </>
+          ) : (
+            <span className="price text-primary text-[12px] lg:text-[14px]  font-[600]">
+              {formatPrice(props?.item?.price)}
+            </span>
+          )}
         </div>
 
 

@@ -52,7 +52,7 @@ const Navigation = (props) => {
             <ul className="flex items-center gap-3 nav">
               <li className="list-none">
                 <Link to="/" className="link transition text-[14px] font-[500]">
-                  <Button className="link transition !font-[500] !text-[rgba(0,0,0,0.8)] hover:!text-[#ff5252] !py-4">
+                  <Button className="link transition !font-[500] !text-[rgba(0,0,0,0.8)] hover:!text-[#FFA239] !py-4">
                     Home
                   </Button>
                 </Link>
@@ -63,7 +63,7 @@ const Navigation = (props) => {
                   return (
                     <li className="list-none relative" key={index}>
                       <Link to={`/products?catId=${cat?._id}`} className="link transition text-[14px] font-[500]">
-                        <Button className="link transition !font-[500] !text-[rgba(0,0,0,0.8)] hover:!text-[#ff5252] !py-4">
+                        <Button className="link transition !font-[500] !text-[rgba(0,0,0,0.8)] hover:!text-[#FFA239] !py-4">
                           {cat?.name}
                         </Button>
                       </Link>
@@ -130,7 +130,7 @@ const Navigation = (props) => {
           <div className="col_3 w-[20%] hidden lg:block">
             <p className="text-[14px] font-[500] flex items-center gap-3 mb-0 mt-0">
               <GoRocket className="text-[18px]" />
-              Free International Delivery
+              International Delivery
             </p>
           </div>
         </div>

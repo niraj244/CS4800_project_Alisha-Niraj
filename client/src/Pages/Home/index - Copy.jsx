@@ -217,7 +217,7 @@ const Home = () => {
 
       <section className="py-4 pt-8 pb-0 bg-white">
         <div className="container">
-          <div className="freeShipping  w-[80%] m-auto py-4 p-4 border-2 border-[#ff5252] flex items-center justify-between rounded-md mb-7">
+          <div className="freeShipping  w-[80%] m-auto py-4 p-4 border-2 border-[#FFA239] flex items-center justify-between rounded-md mb-7">
             <div className="col1 flex items-center gap-4">
               <LiaShippingFastSolid className="text-[50px]" />
               <span className="text-[20px] font-[600] uppercase">
@@ -227,11 +227,11 @@ const Home = () => {
 
             <div className="col2">
               <p className="mb-0 mt-0 font-[500]">
-                Free Delivery Now On Your First Order and over $200
+                Free Delivery Now On Your First Order and over NPR. 10,000
               </p>
             </div>
 
-            <p className="font-bold text-[25px]">- Only $200*</p>
+            <p className="font-bold text-[25px]">- Only NPR. 10,000*</p>
           </div>
 
           {

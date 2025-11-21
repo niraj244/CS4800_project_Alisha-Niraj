@@ -6,6 +6,7 @@ import SearchBox from '../../Components/SearchBox';
 import { FaAngleUp } from "react-icons/fa6";
 import { deleteData, editData, fetchDataFromApi } from '../../utils/api';
 import Pagination from "@mui/material/Pagination";
+import { formatPrice } from '../../utils/currency';
 
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
@@ -331,9 +332,9 @@ export const Orders = () => {
                                           {item?.quantity}
                                         </td>
 
-                                        <td className="px-6 py-4 font-[500]">{item?.price?.toLocaleString('en-US', { style: 'currency', currency: 'INR' })}</td>
+                                        <td className="px-6 py-4 font-[500]">{formatPrice(item?.price)}</td>
 
-                                        <td className="px-6 py-4 font-[500]">{(item?.price * item?.quantity)?.toLocaleString('en-US', { style: 'currency', currency: 'INR' })}</td>
+                                        <td className="px-6 py-4 font-[500]">{formatPrice(item?.price * item?.quantity)}</td>
                                       </tr>
                                     )
                                   })

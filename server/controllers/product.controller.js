@@ -97,6 +97,25 @@ export async function uploadBannerImages(request, response) {
 //create product
 export async function createProduct(request, response) {
     try {
+        // Validate that product has at least one size
+        const productSizes = request.body.size;
+        if (!productSizes || !Array.isArray(productSizes) || productSizes.length === 0 || productSizes.every(s => !s || s.trim() === '')) {
+            return response.status(400).json({
+                error: true,
+                success: false,
+                message: "Product must have at least one size"
+            });
+        }
+
+        // Validate discount is between 0 and 100
+        const discount = parseFloat(request.body.discount);
+        if (isNaN(discount) || discount < 0 || discount > 100) {
+            return response.status(400).json({
+                error: true,
+                success: false,
+                message: "Discount must be a number between 0 and 100"
+            });
+        }
 
         let product = new ProductModel({
             name: request.body.name,
@@ -177,15 +196,46 @@ export async function getAllProducts(request, response) {
             })
         }
 
+        // Get all valid sizes from the master list
+        const validSizes = await ProductSIZEModel.find();
+        const validSizeNames = validSizes.map(s => s.name);
+
+        // Filter invalid sizes from all products
+        const cleanedProducts = await Promise.all(products.map(async (product) => {
+            if (product.size && Array.isArray(product.size)) {
+                const originalSizeCount = product.size.length;
+                product.size = product.size.filter(size => validSizeNames.includes(size));
+                
+                // If sizes were removed, save the product
+                if (product.size.length !== originalSizeCount) {
+                    await product.save();
+                }
+            }
+            return product;
+        }));
+
+        // Also clean totalProducts
+        const cleanedTotalProducts = await Promise.all(totalProducts.map(async (product) => {
+            if (product.size && Array.isArray(product.size)) {
+                const originalSizeCount = product.size.length;
+                product.size = product.size.filter(size => validSizeNames.includes(size));
+                
+                if (product.size.length !== originalSizeCount) {
+                    await product.save();
+                }
+            }
+            return product;
+        }));
+
         return response.status(200).json({
             error: false,
             success: true,
-            products: products,
+            products: cleanedProducts,
             total: total,
             page: parseInt(page),
             totalPages: Math.ceil(total / limit),
-            totalCount: totalProducts?.length,
-            totalProducts: totalProducts
+            totalCount: cleanedTotalProducts?.length,
+            totalProducts: cleanedTotalProducts
         })
 
 
@@ -858,6 +908,31 @@ export async function deleteMultipleProduct(request, response) {
 
 }
 
+// Helper function to filter invalid sizes from products
+async function filterInvalidSizes(product) {
+    try {
+        // Get all valid sizes from the master list
+        const validSizes = await ProductSIZEModel.find();
+        const validSizeNames = validSizes.map(s => s.name);
+
+        // Filter product sizes to only include valid ones
+        if (product.size && Array.isArray(product.size)) {
+            const originalSizeCount = product.size.length;
+            product.size = product.size.filter(size => validSizeNames.includes(size));
+            
+            // If sizes were removed, save the product
+            if (product.size.length !== originalSizeCount) {
+                await product.save();
+            }
+        }
+
+        return product;
+    } catch (error) {
+        console.error("Error filtering invalid sizes:", error);
+        return product; // Return original product if filtering fails
+    }
+}
+
 //get single product 
 export async function getProduct(request, response) {
     try {
@@ -871,10 +946,13 @@ export async function getProduct(request, response) {
             })
         }
 
+        // Filter out invalid sizes before returning
+        const cleanedProduct = await filterInvalidSizes(product);
+
         return response.status(200).json({
             error: false,
             success: true,
-            product: product
+            product: cleanedProduct
         })
 
     } catch (error) {
@@ -916,6 +994,26 @@ export async function removeImageFromCloudinary(request, response) {
 //updated product 
 export async function updateProduct(request, response) {
     try {
+        // Validate that product has at least one size
+        const productSizes = request.body.size;
+        if (!productSizes || !Array.isArray(productSizes) || productSizes.length === 0 || productSizes.every(s => !s || s.trim() === '')) {
+            return response.status(400).json({
+                error: true,
+                success: false,
+                message: "Product must have at least one size"
+            });
+        }
+
+        // Validate discount is between 0 and 100
+        const discount = parseFloat(request.body.discount);
+        if (isNaN(discount) || discount < 0 || discount > 100) {
+            return response.status(400).json({
+                error: true,
+                success: false,
+                message: "Discount must be a number between 0 and 100"
+            });
+        }
+
         const product = await ProductModel.findByIdAndUpdate(
             request.params.id,
             {
@@ -940,6 +1038,7 @@ export async function updateProduct(request, response) {
                 countInStock: request.body.countInStock,
                 rating: request.body.rating,
                 isFeatured: request.body.isFeatured,
+                discount: request.body.discount,
                 productRam: request.body.productRam,
                 size: request.body.size,
                 productWeight: request.body.productWeight,
@@ -1331,46 +1430,96 @@ export async function createProductSize(request, response) {
 
 
 export async function deleteProductSize(request, response) {
-    const productSize = await ProductSIZEModel.findById(request.params.id);
+    try {
+        const productSize = await ProductSIZEModel.findById(request.params.id);
 
-    if (!productSize) {
-        return response.status(404).json({
-            message: "Item Not found",
+        if (!productSize) {
+            return response.status(404).json({
+                message: "Item Not found",
+                error: true,
+                success: false
+            })
+        }
+
+        const sizeName = productSize.name;
+
+        // Check if any products would be left with no sizes after deletion
+        // Find products that have this size
+        const productsWithThisSize = await ProductModel.find({
+            size: { $in: [sizeName] }
+        });
+
+        // Check which products would have no sizes left after removing this size
+        const productsThatWouldHaveNoSizes = productsWithThisSize.filter(product => {
+            const sizesAfterRemoval = product.size.filter(s => s !== sizeName);
+            return sizesAfterRemoval.length === 0;
+        });
+
+        if (productsThatWouldHaveNoSizes.length > 0) {
+            return response.status(400).json({
+                message: `Cannot delete this size. ${productsThatWouldHaveNoSizes.length} product(s) would be left with no sizes. Please add another size to those products first.`,
+                error: true,
+                success: false
+            });
+        }
+
+        // Remove this size from all products that have it
+        await ProductModel.updateMany(
+            { size: { $in: [sizeName] } },
+            { $pull: { size: sizeName } }
+        );
+
+        // Delete the size from the size collection
+        const deletedProductSize = await ProductSIZEModel.findByIdAndDelete(request.params.id);
+
+        if (!deletedProductSize) {
+            return response.status(404).json({
+                message: "Item not deleted!",
+                success: false,
+                error: true
+            });
+        }
+
+        return response.status(200).json({
+            success: true,
+            error: false,
+            message: "Product size Deleted and removed from all products!",
+        });
+    } catch (error) {
+        return response.status(500).json({
+            message: error.message || error,
             error: true,
             success: false
         })
     }
-
-    const deletedProductSize = await ProductSIZEModel.findByIdAndDelete(request.params.id);
-
-    if (!deletedProductSize) {
-        response.status(404).json({
-            message: "Item not deleted!",
-            success: false,
-            error: true
-        });
-    }
-
-    return response.status(200).json({
-        success: true,
-        error: false,
-        message: "Product size Deleted!",
-    });
 }
 
 
 export async function updateProductSize(request, response) {
 
     try {
+        // Get the old size name before updating
+        const oldSize = await ProductSIZEModel.findById(request.params.id);
+        
+        if (!oldSize) {
+            return response.status(404).json({
+                message: "Product size not found!",
+                error: true,
+                success: false
+            });
+        }
 
+        const oldSizeName = oldSize.name;
+        const newSizeName = request.body.name;
+
+        // Update the size in the size collection
         const productSize = await ProductSIZEModel.findByIdAndUpdate(
             request.params.id,
             {
-                name: request.body.name,
+                name: newSizeName,
             },
             { new: true }
         );
-
 
         if (!productSize) {
             return response.status(404).json({
@@ -1379,8 +1528,23 @@ export async function updateProductSize(request, response) {
             });
         }
 
+        // Update the size name in all products that have the old size
+        if (oldSizeName !== newSizeName) {
+            // Find all products with the old size
+            const productsWithOldSize = await ProductModel.find({ size: { $in: [oldSizeName] } });
+            
+            // Update each product's size array
+            for (const product of productsWithOldSize) {
+                const sizeIndex = product.size.indexOf(oldSizeName);
+                if (sizeIndex !== -1) {
+                    product.size[sizeIndex] = newSizeName;
+                    await product.save();
+                }
+            }
+        }
+
         return response.status(200).json({
-            message: "The product size is updated",
+            message: "The product size is updated in all products",
             error: false,
             success: true
         })
@@ -1415,6 +1579,50 @@ export async function getProductSize(request, response) {
             data: productSize
         })
 
+
+    } catch (error) {
+        return response.status(500).json({
+            message: error.message || error,
+            error: true,
+            success: false
+        })
+    }
+}
+
+// Cleanup function to remove invalid sizes from all products
+export async function cleanupInvalidSizes(request, response) {
+    try {
+        // Get all valid sizes from the master list
+        const validSizes = await ProductSIZEModel.find();
+        const validSizeNames = validSizes.map(s => s.name);
+
+        // Find all products
+        const allProducts = await ProductModel.find();
+        
+        let cleanedCount = 0;
+        let totalRemoved = 0;
+
+        // Clean each product
+        for (const product of allProducts) {
+            if (product.size && Array.isArray(product.size)) {
+                const originalSizeCount = product.size.length;
+                product.size = product.size.filter(size => validSizeNames.includes(size));
+                
+                if (product.size.length !== originalSizeCount) {
+                    await product.save();
+                    cleanedCount++;
+                    totalRemoved += (originalSizeCount - product.size.length);
+                }
+            }
+        }
+
+        return response.status(200).json({
+            error: false,
+            success: true,
+            message: `Cleanup completed. ${cleanedCount} product(s) cleaned, ${totalRemoved} invalid size(s) removed.`,
+            cleanedProducts: cleanedCount,
+            removedSizes: totalRemoved
+        })
 
     } catch (error) {
         return response.status(500).json({

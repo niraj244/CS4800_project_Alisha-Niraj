@@ -22,7 +22,11 @@ const CategoryPanel = (props) => {
     <Box sx={{ width: 250 }} role="presentation" className="categoryPanel">
 
       <div className="p-3">
-        <img src={localStorage.getItem('logo')} className="w-[170px]" />
+        <img 
+          src={localStorage.getItem('logo')} 
+          className="w-[170px] h-[60px] object-contain" 
+          alt="Logo"
+        />
       </div>
 
       <h3 className="p-3 text-[16px] font-[500] flex items-center justify-between">

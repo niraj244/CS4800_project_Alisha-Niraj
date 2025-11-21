@@ -10,6 +10,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { postData } from "../../utils/api";
 import { FaCheckDouble } from "react-icons/fa";
 import { IoMdHeart } from "react-icons/io";
+import { formatPrice } from "../../utils/currency";
 
 
 
@@ -21,6 +22,7 @@ export const ProductDetailsComponent = (props) => {
   const [tabError, setTabError] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
   const [isAddedInMyList, setIsAddedInMyList] = useState(false);
+  const [isInCompare, setIsInCompare] = useState(false);
 
   const context = useContext(MyContext);
 
@@ -63,6 +65,11 @@ export const ProductDetailsComponent = (props) => {
     }
 
   }, [context?.myListData])
+
+  useEffect(() => {
+    const isInCompareList = context?.compareData?.some(item => item._id === props?.item?._id);
+    setIsInCompare(isInCompareList || false);
+  }, [context?.compareData, props?.item?._id])
 
   const addToCart = (product, userId, quantity) => {
 
@@ -196,12 +203,20 @@ export const ProductDetailsComponent = (props) => {
 
       <div className="flex flex-col sm:flex-row md:flex-row lg:flex-row items-start sm:items-center gap-4 mt-4">
         <div className="flex items-center gap-4">
-          <span className="oldPrice line-through text-gray-500 text-[20px] font-[500]">
-            &#x20b9;{props?.item?.price}
-          </span>
-          <span className="price text-primary text-[20px]  font-[600]">
-            &#x20b9;{props?.item?.oldPrice}
-          </span>
+          {props?.item?.discount > 0 ? (
+            <>
+              <span className="oldPrice line-through text-gray-500 text-[20px] font-[500]">
+                {formatPrice(props?.item?.oldPrice)}
+              </span>
+              <span className="price text-primary text-[20px]  font-[600]">
+                {formatPrice(props?.item?.price)}
+              </span>
+            </>
+          ) : (
+            <span className="price text-primary text-[20px]  font-[600]">
+              {formatPrice(props?.item?.price)}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-4">
@@ -338,8 +353,18 @@ export const ProductDetailsComponent = (props) => {
           Add to Wishlist
         </span>
 
-        <span className="flex items-center gap-2  text-[14px] sm:text-[15px] link cursor-pointer font-[500]">
-          <IoGitCompareOutline className="text-[18px]" /> Add to Compare
+        <span 
+          className={`flex items-center gap-2 text-[14px] sm:text-[15px] link cursor-pointer font-[500] ${isInCompare ? 'text-primary' : ''}`}
+          onClick={() => {
+            if (isInCompare) {
+              context?.removeFromCompare(props?.item?._id);
+            } else {
+              context?.addToCompare(props?.item);
+            }
+          }}
+        >
+          <IoGitCompareOutline className={`text-[18px] ${isInCompare ? '!text-primary' : ''}`} /> 
+          {isInCompare ? 'Remove from Compare' : 'Add to Compare'}
         </span>
       </div>
     </>

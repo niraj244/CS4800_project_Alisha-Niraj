@@ -100,7 +100,7 @@ const Header = () => {
             <div className="flex items-center justify-between">
               <div className="col1 w-[50%] hidden lg:block">
                 <p className="text-[12px] font-[500] mt-0 mb-0">
-                  Get up to 50% off new season styles, limited time only
+                  Black Friday Exclusive: Up to 50% Off — Limited Time Only!
                 </p>
               </div>
 
@@ -137,7 +137,11 @@ const Header = () => {
 
             <div className="col1 w-[40%] lg:w-[25%]">
               <Link to={"/"}>
-                <img src={localStorage.getItem('logo')} className="max-w-[140px] lg:max-w-[200px]" />
+                <img 
+                  src={localStorage.getItem('logo')} 
+                  className="w-[140px] h-[50px] lg:w-[200px] lg:h-[70px] object-contain" 
+                  alt="Logo"
+                />
               </Link>
             </div>
 
@@ -295,6 +299,17 @@ const Header = () => {
 
                 }
 
+                <li>
+                  <Tooltip title="Compare">
+                    <Link to="/compare">
+                      <IconButton aria-label="compare">
+                        <StyledBadge badgeContent={context?.compareData?.length !== 0 ? context?.compareData?.length : 0} color="secondary">
+                          <IoGitCompareOutline />
+                        </StyledBadge>
+                      </IconButton>
+                    </Link>
+                  </Tooltip>
+                </li>
 
                 <li>
                   <Tooltip title="Cart">

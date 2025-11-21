@@ -115,12 +115,12 @@ export const CategoryList = () => {
 
                                             <TableCell width={100}>
                                                 <div className="flex items-center gap-4 w-[50px]">
-                                                    <div class="img w-full rounded-md overflow-hidden group">
+                                                    <div class="img w-[50px] h-[50px] rounded-md overflow-hidden group bg-gray-100 flex items-center justify-center">
                                                         <Link to="/product/45745" data-discover="true">
                                                             <LazyLoadImage
                                                                 alt={"image"}
                                                                 effect="blur"
-                                                                className="w-full group-hover:scale-105 transition-all"
+                                                                className="w-full h-full object-contain group-hover:scale-105 transition-all"
                                                                 src={item.images[0]}
                                                             />
 
@@ -131,7 +131,9 @@ export const CategoryList = () => {
                                             </TableCell>
 
                                             <TableCell width={100}>
-                                                {item?.name}
+                                                <div className="w-[150px] h-[50px] flex items-center overflow-hidden">
+                                                    <span className="text-ellipsis line-clamp-2" title={item?.name}>{item?.name}</span>
+                                                </div>
                                             </TableCell>
 
                                             <TableCell width={100}>

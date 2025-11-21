@@ -6,7 +6,7 @@
 
 
 body{
-  font-family: "Montserrat", sans-serif;
+  font-family: "Anta", sans-serif;
   font-optical-sizing: auto;
   background: #f5f0f0;
   color: #3e3e3e;
@@ -19,17 +19,17 @@ h1, h2, h3, h4, h5, h6{font-weight: 600;}
 
 
 ::-webkit-scrollbar{width: 8px !important; height: 8px !important;}
-::-webkit-scrollbar-thumb{background: #ff5252;}
+::-webkit-scrollbar-thumb{background: #FFA239;}
 ::-webkit-scrollbar-track{background: #fff;}
 
 .overflow-x-auto::-webkit-scrollbar-thumb{background: #ccc;}
 
 .container{width: 95%; margin: auto;}
 
-.btn-org{background: #ff5252 !important; color: #fff !important; font-weight: 500; font-size: 16px; padding: 7px 20px !important; border:1px solid transparent !important; }
+.btn-org{background: #FFA239 !important; color: #fff !important; font-weight: 500; font-size: 16px; padding: 7px 20px !important; border:1px solid transparent !important; }
 .btn-org:hover{background: #171717 !important;}
 
-.btn-org.btn-border{background: none !important; color: #ff5252 !important; border:1px solid #ff5252 !important; font-weight: 500; font-size: 16px; padding: 7px 20px !important;}
+.btn-org.btn-border{background: none !important; color: #FFA239 !important; border:1px solid #FFA239 !important; font-weight: 500; font-size: 16px; padding: 7px 20px !important;}
 .btn-org.btn-border:hover{background: #171717 !important; color: #fff !important;  border:1px solid #171717 !important;}
 
 .btn-dark{background: #363636 !important; color: #fff !important;  border:1px solid #171717 !important;}
@@ -39,9 +39,9 @@ h1, h2, h3, h4, h5, h6{font-weight: 600;}
 .btn-lg{ font-size: 18px; padding: 10px 20px !important;}
 .btn-sm{ font-size: 12px !important; padding: 5px 20px !important;}
 
-.link:hover,.Mui-checked{color: #ff5252 !important;}
+.link:hover,.Mui-checked{color: #FFA239 !important;}
 
-.MuiBadge-badge{background-color: #ff5252 !important;}
+.MuiBadge-badge{background-color: #FFA239 !important;}
 
 nav ul button{text-transform: capitalize !important;}
 
@@ -71,26 +71,26 @@ nav ul button:hover{background: none !important;}
 
 .homeCatSlider .item{border: 1px solid rgba(0,0,0,0.1);}
 
-.swiper-button-prev:hover,.swiper-button-next:hover{background: #ff5252 !important;}
+.swiper-button-prev:hover,.swiper-button-next:hover{background: #FFA239 !important;}
 .swiper-button-prev:hover::after,.swiper-button-next:hover::after{color: #fff !important;}
 
 .homeCatSlider .item:hover img{transform:scale(1.1);}
 
 
-.MuiTabs-indicator{background-color: #ff5252 !important;}
-.MuiTab-textColorPrimary.Mui-selected{color:#ff5252 !important;}
+.MuiTabs-indicator{background-color: #FFA239 !important;}
+.MuiTab-textColorPrimary.Mui-selected{color:#FFA239 !important;}
 
 .productsSlider .swiper-wrapper{padding: 15px 8px; margin-left: -15px; margin-right: -15px;}
 
 
 footer form input::placeholder{font-size: 14px;}
 
-.css-imrjgg-MuiButtonBase-root-MuiCheckbox-root.Mui-checked, .css-imrjgg-MuiButtonBase-root-MuiCheckbox-root.MuiCheckbox-indeterminate{color:#ff5252 !important;}
+.css-imrjgg-MuiButtonBase-root-MuiCheckbox-root.Mui-checked, .css-imrjgg-MuiButtonBase-root-MuiCheckbox-root.MuiCheckbox-indeterminate{color:#FFA239 !important;}
 
 
 .MuiFormControlLabel-label{font-size: 13px !important; color: rgba(0,0,0,0.8);}
 
-.swiper-pagination-bullet-active{background: #ff5252 !important;}
+.swiper-pagination-bullet-active{background: #FFA239 !important;}
 
 
 .homeSliderV2 .swiper-slide-active .info{right: 0px !important; opacity: 1;}
@@ -110,8 +110,8 @@ footer form input::placeholder{font-size: 14px;}
   transition: height 400ms;
 }
 
-.itemViewActions button.active svg{color:#ff5252 !important; opacity: 1;}
-.Mui-selected.MuiPaginationItem-page{background: #ff5252 !important; color:#fff !important;}
+.itemViewActions button.active svg{color:#FFA239 !important; opacity: 1;}
+.Mui-selected.MuiPaginationItem-page{background: #FFA239 !important; color:#fff !important;}
 
 .shadow-md,.shadow-lg{box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24) !important;}
 
@@ -126,7 +126,7 @@ footer form input::placeholder{font-size: 14px;}
 
 
 .productContent .actions button{min-width: 40px !important; height: 30px !important; border: 1px solid rgba(0,0,0,0.1) !important; color: rgba(0,0,0,0.7);}
-.productContent .actions button.error{ border: 1px solid #ff5252 !important;}
+.productContent .actions button.error{ border: 1px solid #FFA239 !important;}
 
 input[type=number]::-webkit-inner-spin-button, 
 input[type=number]::-webkit-outer-spin-button { 
@@ -159,10 +159,10 @@ input[type=number]::-webkit-outer-spin-button {
   #account-menu .MuiPaper-root{width: 200px !important;}
 
   .myAccountTabs li a{position: relative; display: block;}
-  .myAccountTabs li a:before{content: ''; width: 3px; height: 50%; position: absolute; top: 50%; left: 0px; background: #ff5252; transition: all 0.3s ease-in-out; opacity: 0;}
+  .myAccountTabs li a:before{content: ''; width: 3px; height: 50%; position: absolute; top: 50%; left: 0px; background: #FFA239; transition: all 0.3s ease-in-out; opacity: 0;}
 
   .myAccountTabs li a.active::before{height: 100%; opacity: 1; top: 0px;}
-  .myAccountTabs li a.active button svg{color: #ff5252 !important; opacity: 1 !important;}
+  .myAccountTabs li a.active button svg{color: #FFA239 !important; opacity: 1 !important;}
 
   button .MuiCircularProgress-root{width:25px !important; height:25px !important;}
   button.btn-org .MuiCircularProgress-root{color: #fff !important;}

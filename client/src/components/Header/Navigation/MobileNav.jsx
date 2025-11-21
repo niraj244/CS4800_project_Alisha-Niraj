@@ -5,6 +5,7 @@ import { IoSearch } from "react-icons/io5";
 import { LuHeart } from "react-icons/lu";
 import { BsBagCheck } from "react-icons/bs";
 import { FiUser } from "react-icons/fi";
+import { IoGitCompareOutline } from "react-icons/io5";
 import { NavLink } from "react-router";
 import { MdOutlineFilterAlt } from "react-icons/md";
 import { MyContext } from '../../../App';
@@ -65,6 +66,17 @@ const MobileNav = () => {
                 </Button>
             </NavLink>
 
+            <NavLink to="/compare" exact={true} activeClassName="isActive" onClick={()=>context?.setOpenSearchPanel(false)}>
+                <Button className="flex-col !w-[40px] !min-w-[40px] !capitalize !text-gray-700 relative">
+                    <IoGitCompareOutline size={18} />
+                    <span className='text-[12px]'>Compare</span>
+                    {context?.compareData?.length > 0 && (
+                        <span className="absolute top-0 right-0 bg-primary text-white text-[10px] rounded-full w-[16px] h-[16px] flex items-center justify-center">
+                            {context.compareData.length}
+                        </span>
+                    )}
+                </Button>
+            </NavLink>
 
             <NavLink to="/my-orders" exact={true} activeClassName="isActive" onClick={()=>context?.setOpenSearchPanel(false)}>
                 <Button className="flex-col !w-[40px] !min-w-[40px] !capitalize !text-gray-700">

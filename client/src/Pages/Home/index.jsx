@@ -37,7 +37,7 @@ const Home = () => {
   const [bannerList2Data, setBannerList2Data] = useState([]);
   const [blogData, setBlogData] = useState([]);
   const [randomCatProducts, setRandomCatProducts] = useState([]);
-
+  const [popularProductsSubtitle, setPopularProductsSubtitle] = useState("Do not miss the current offers until the end of March.");
 
   const context = useContext(MyContext);
 
@@ -45,6 +45,15 @@ const Home = () => {
   useEffect(() => {
 
     window.scrollTo(0, 0);
+
+    // Fetch site settings for popular products subtitle
+    fetchDataFromApi("/api/siteSettings").then((res) => {
+      if (res?.error === false && res?.data?.popularProductsSubtitle) {
+        setPopularProductsSubtitle(res?.data?.popularProductsSubtitle);
+      }
+    }).catch(() => {
+      // Use default if API fails
+    });
 
     fetchDataFromApi("/api/homeSlides").then((res) => {
       setHomeSlidesData(res?.data)
@@ -167,7 +176,7 @@ const Home = () => {
             <div className="leftSec w-full lg:w-[40%]">
               <h2 className="text-[14px] sm:text-[14px] md:text-[16px] lg:text-[20px] font-[600]">Popular Products</h2>
               <p className="text-[12px] sm:text-[14px] md:text-[13px] lg:text-[14px] font-[400] mt-0 mb-0">
-                Do not miss the current offers until the end of March.
+                {popularProductsSubtitle}
               </p>
             </div>
 
@@ -208,22 +217,26 @@ const Home = () => {
 
 
       <section className="py-6 pt-0 bg-white">
-        <div className="container flex flex-col lg:flex-row gap-5">
-          <div className="part1 w-full lg:w-[70%]">
+        <div className="container">
+          <div className="bg-white p-3 lg:p-4 rounded-lg border border-gray-200 shadow-sm">
+            <div className="flex flex-col lg:flex-row gap-3">
+              <div className="part1 w-full lg:w-[70%]">
 
-            {
-              productsBanners?.length > 0 && <HomeBannerV2 data={productsBanners} />
-            }
+                {
+                  productsBanners?.length > 0 && <HomeBannerV2 data={productsBanners} />
+                }
 
 
+              </div>
+
+              <div className="part2 scrollableBox w-full lg:w-[30%] flex items-center gap-3 justify-between flex-row lg:flex-col">
+                <BannerBoxV2 info={bannerV1Data[bannerV1Data?.length - 1]?.alignInfo} image={bannerV1Data[bannerV1Data?.length - 1]?.images[0]} item={bannerV1Data[bannerV1Data?.length - 1]} />
+
+                <BannerBoxV2 info={bannerV1Data[bannerV1Data?.length - 2]?.alignInfo} image={bannerV1Data[bannerV1Data?.length - 2]?.images[0]} item={bannerV1Data[bannerV1Data?.length - 2]} />
+              </div>
+
+            </div>
           </div>
-
-          <div className="part2 scrollableBox w-full lg:w-[30%] flex items-center gap-5 justify-between flex-row lg:flex-col">
-            <BannerBoxV2 info={bannerV1Data[bannerV1Data?.length - 1]?.alignInfo} image={bannerV1Data[bannerV1Data?.length - 1]?.images[0]} item={bannerV1Data[bannerV1Data?.length - 1]} />
-
-            <BannerBoxV2 info={bannerV1Data[bannerV1Data?.length - 2]?.alignInfo} image={bannerV1Data[bannerV1Data?.length - 2]?.images[0]} item={bannerV1Data[bannerV1Data?.length - 2]} />
-          </div>
-
         </div>
       </section>
 
@@ -233,7 +246,7 @@ const Home = () => {
 
       <section className="py-0 lg:py-4 pt-0 lg:pt-8 pb-0 bg-white">
         <div className="container">
-          <div className="freeShipping w-full md:w-[80%] m-auto py-4 p-4  border-2 border-[#ff5252] flex items-center justify-center lg:justify-between flex-col lg:flex-row rounded-md mb-7">
+          <div className="freeShipping w-full md:w-[80%] m-auto py-4 p-4  border-2 border-[#FFA239] flex items-center justify-center lg:justify-between flex-col lg:flex-row rounded-md mb-7">
             <div className="col1 flex items-center gap-4">
               <LiaShippingFastSolid className="text-[30px] lg:text-[50px]" />
               <span className="text-[16px] lg:text-[20px] font-[600] uppercase">
@@ -243,16 +256,16 @@ const Home = () => {
 
             <div className="col2">
               <p className="mb-0 mt-0 font-[500] text-center">
-                Free Delivery Now On Your First Order and over $200
+                free shipping for all orders over NPR, 10000
               </p>
             </div>
-
-            <p className="font-bold text-[20px] lg:text-[25px]">- Only $200*</p>
           </div>
 
-          {
-            bannerV1Data?.length !== 0 && <AdsBannerSliderV2 items={4} data={bannerV1Data} />
-          }
+          <div className="bg-white p-3 lg:p-4 rounded-lg border border-gray-200 shadow-sm mt-4">
+            {
+              bannerV1Data?.length !== 0 && <AdsBannerSliderV2 items={4} data={bannerV1Data} />
+            }
+          </div>
 
 
         </div>
@@ -292,9 +305,11 @@ const Home = () => {
             featuredProducts?.length !== 0 && <ProductsSlider items={6} data={featuredProducts} />
           }
 
-          {
-            bannerList2Data?.length !== 0 && <AdsBannerSlider items={4} data={bannerList2Data} />
-          }
+          <div className="bg-white p-3 lg:p-4 rounded-lg border border-gray-200 shadow-sm mt-4">
+            {
+              bannerList2Data?.length !== 0 && <AdsBannerSlider items={4} data={bannerList2Data} />
+            }
+          </div>
 
 
 
@@ -344,7 +359,7 @@ const Home = () => {
         blogData?.length !== 0 &&
         <section className="py-5 pb-8 pt-0 bg-white blogSection">
           <div className="container">
-            <h2 className="text-[20px] font-[600] mb-4">From The Blog</h2>
+            <h2 className="text-[20px] font-[600] mb-6 lg:mb-8">From The Blog</h2>
             <Swiper
               slidesPerView={4}
               spaceBetween={30}

@@ -22,6 +22,7 @@ import { MyContext } from '../../App';
 import { fetchDataFromApi, deleteData, deleteMultipleData } from '../../utils/api';
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/blur.css";
+import { formatPrice } from '../../utils/currency';
 import CircularProgress from '@mui/material/CircularProgress';
 
 import Lightbox from "yet-another-react-lightbox";
@@ -548,10 +549,10 @@ export const Products = () => {
                                             <TableCell style={{ minWidth: columns.minWidth }}>
                                                 <div className="flex gap-1 flex-col">
                                                     <span className="oldPrice line-through leading-3 text-gray-500 text-[14px] font-[500]">
-                                                        {product?.price?.toLocaleString('en-US', { style: 'currency', currency: 'INR' })}
+                                                        {formatPrice(product?.price)}
                                                     </span>
                                                     <span className="price text-primary text-[14px]  font-[600]">
-                                                        {product?.oldPrice?.toLocaleString('en-US', { style: 'currency', currency: 'INR' })}
+                                                        {formatPrice(product?.oldPrice)}
                                                     </span>
                                                 </div>
                                             </TableCell>

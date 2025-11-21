@@ -23,6 +23,7 @@ import { MyContext } from '../../App';
 import SearchBox from "../../Components/SearchBox";
 import { fetchDataFromApi } from "../../utils/api";
 import Products from "../Products";
+import { formatPrice } from '../../utils/currency';
 
 
 const Dashboard = () => {
@@ -407,9 +408,9 @@ const Dashboard = () => {
                                             {item?.quantity}
                                           </td>
 
-                                          <td className="px-6 py-4 font-[500]">{item?.price?.toLocaleString('en-US', { style: 'currency', currency: 'INR' })}</td>
+                                          <td className="px-6 py-4 font-[500]">{formatPrice(item?.price)}</td>
 
-                                          <td className="px-6 py-4 font-[500]">{(item?.price * item?.quantity)?.toLocaleString('en-US', { style: 'currency', currency: 'INR' })}</td>
+                                          <td className="px-6 py-4 font-[500]">{formatPrice(item?.price * item?.quantity)}</td>
                                         </tr>
                                       )
                                     })

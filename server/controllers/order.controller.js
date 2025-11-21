@@ -4,6 +4,7 @@ import UserModel from '../models/user.model.js';
 import paypal from "@paypal/checkout-server-sdk";
 import OrderConfirmationEmail from "../utils/orderEmailTemplate.js";
 import sendEmailFun from "../config/sendEmail.js";
+import crypto from "crypto";
 
 export const createOrderController = async (request, response) => {
     try {
@@ -154,51 +155,140 @@ export async function getTotalOrdersCountController(request, response) {
 
 
 function getPayPalClient() {
+    // Check if credentials are configured
+    const isLive = process.env.PAYPAL_MODE === "live" || process.env.PAYPAL_MODE === "LIVE";
+    const isSandbox = process.env.PAYPAL_MODE === "sandbox" || process.env.PAYPAL_MODE === "SANDBOX" || process.env.PAYPAL_MODE === "test" || process.env.PAYPAL_MODE === "TEST";
+    
+    // Default to sandbox/test if not specified
+    const useLive = isLive && !isSandbox;
 
-    const environment =
-        process.env.PAYPAL_MODE === "live"
-            ? new paypal.core.LiveEnvironment(
-                process.env.PAYPAL_CLIENT_ID_LIVE,
-                process.env.PAYPAL_SECRET_LIVE
-            )
-            : new paypal.core.SandboxEnvironment(
-                process.env.PAYPAL_CLIENT_ID_TEST,
-                process.env.PAYPAL_SECRET_TEST
-            );
-
-    return new paypal.core.PayPalHttpClient(environment);
-
-
+    if (useLive) {
+        const clientId = process.env.PAYPAL_CLIENT_ID_LIVE?.trim();
+        const secret = process.env.PAYPAL_SECRET_LIVE?.trim();
+        
+        if (!clientId || !secret) {
+            throw new Error("PayPal Live credentials not configured. Please set PAYPAL_CLIENT_ID_LIVE and PAYPAL_SECRET_LIVE in .env file");
+        }
+        
+        console.log("Using PayPal LIVE environment");
+        return new paypal.core.PayPalHttpClient(
+            new paypal.core.LiveEnvironment(clientId, secret)
+        );
+    } else {
+        const clientId = process.env.PAYPAL_CLIENT_ID_TEST?.trim();
+        const secret = process.env.PAYPAL_SECRET_TEST?.trim();
+        
+        if (!clientId || !secret) {
+            console.error("PayPal credentials check:");
+            console.error("PAYPAL_CLIENT_ID_TEST:", clientId ? "✓ Set" : "✗ Missing");
+            console.error("PAYPAL_SECRET_TEST:", secret ? "✓ Set" : "✗ Missing");
+            throw new Error("PayPal Sandbox credentials not configured. Please set PAYPAL_CLIENT_ID_TEST and PAYPAL_SECRET_TEST in .env file");
+        }
+        
+        // Verify credentials are different
+        if (clientId === secret) {
+            throw new Error("PayPal Client ID and Secret cannot be the same. Please check your server/.env file.");
+        }
+        
+        console.log("Using PayPal SANDBOX environment");
+        console.log("Client ID:", clientId.substring(0, 10) + "...");
+        console.log("Secret:", secret.substring(0, 10) + "...");
+        
+        return new paypal.core.PayPalHttpClient(
+            new paypal.core.SandboxEnvironment(clientId, secret)
+        );
+    }
 }
 
 
 export const createOrderPaypalController = async (request, response) => {
     try {
+        const { userId, totalAmount, nprAmount } = request.query;
+
+        // Validate inputs
+        if (!userId) {
+            return response.status(400).json({
+                error: true,
+                success: false,
+                message: "User ID is required"
+            });
+        }
+
+        // totalAmount is in USD (for PayPal), nprAmount is the original NPR amount
+        const usdAmount = totalAmount; // USD amount for PayPal
+        const originalNprAmount = nprAmount || totalAmount; // Original NPR amount to store
+
+        if (!usdAmount || isNaN(parseFloat(usdAmount)) || parseFloat(usdAmount) <= 0) {
+            return response.status(400).json({
+                error: true,
+                success: false,
+                message: "Invalid total amount"
+            });
+        }
 
         const req = new paypal.orders.OrdersCreateRequest();
         req.prefer("return=representation");
 
+        // PayPal requires USD (doesn't support NPR)
         req.requestBody({
             intent: "CAPTURE",
             purchase_units: [{
                 amount: {
-                    currency_code: 'USD',
-                    value: request.query.totalAmount
-                }
+                    currency_code: 'USD', // PayPal doesn't support NPR, must use USD
+                    value: parseFloat(usdAmount).toFixed(2)
+                },
+                description: `Order payment (NPR ${originalNprAmount})` // Show original NPR amount in description
             }]
         });
-
 
         try {
             const client = getPayPalClient();
             const order = await client.execute(req);
+            
+            if (!order.result || !order.result.id) {
+                throw new Error("PayPal order creation failed - no order ID returned");
+            }
+
             response.json({ id: order.result.id });
         } catch (error) {
-            console.error(error);
-            response.status(500).send("Error creating PayPal order");
+            console.error("========== PAYPAL API ERROR ==========");
+            console.error("PayPal API Error:", error);
+            console.error("Error message:", error.message || error);
+            console.error("Error status:", error.statusCode);
+            console.error("Error details:", error.details || error);
+            
+            // Log the actual PayPal error response if available
+            if (error.response) {
+                console.error("PayPal Error Response:", JSON.stringify(error.response, null, 2));
+            }
+            
+            // Check for specific error types
+            let errorMessage = "Error creating PayPal order.";
+            
+            if (error.message && error.message.includes("credentials")) {
+                errorMessage = "PayPal credentials not configured correctly. Please check your server .env file.";
+            } else if (error.message && (error.message.includes("401") || error.message.includes("invalid_client") || error.message.includes("Authentication failed"))) {
+                errorMessage = "PayPal authentication failed. Your PayPal Secret is incorrect. Please check your server .env file - PAYPAL_SECRET_TEST must be different from PAYPAL_CLIENT_ID_TEST.";
+            } else if (error.message && error.message.includes("400")) {
+                errorMessage = "Invalid PayPal request. Please check the order amount.";
+            } else if (error.statusCode === 401 || (error.message && error.message.includes("invalid_client"))) {
+                errorMessage = "PayPal authentication failed. Please verify your PayPal Secret in server/.env file.";
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            console.error("Returning error message to client:", errorMessage);
+            console.error("=====================================");
+            
+            return response.status(500).json({
+                error: true,
+                success: false,
+                message: errorMessage
+            });
         }
 
     } catch (error) {
+        console.error("createOrderPaypalController Error:", error);
         return response.status(500).json({
             message: error.message || error,
             error: true,
@@ -217,13 +307,17 @@ export const captureOrderPaypalController = async (request, response) => {
         const req = new paypal.orders.OrdersCaptureRequest(paymentId);
         req.requestBody({});
 
+        // Store the original NPR amount (not the converted USD amount)
+        // If nprAmount is provided, use it; otherwise use totalAmount (assuming it's already in NPR)
+        const nprAmount = request.body.nprAmount || request.body.totalAmount;
+
         const orderInfo = {
             userId: request.body.userId,
             products: request.body.products,
             paymentId: request.body.paymentId,
             payment_status: request.body.payment_status,
             delivery_address: request.body.delivery_address,
-            totalAmt: request.body.totalAmount,
+            totalAmt: parseFloat(nprAmount), // Store in NPR
             date: request.body.date
         }
 
@@ -702,4 +796,253 @@ export async function deleteOrder(request, response) {
         error: false,
         message: "Order Deleted!",
     });
+}
+
+
+// Temporary storage for eSewa orders (in production, use Redis or database)
+const esewaPendingOrders = new Map();
+
+// eSewa Payment Integration
+export const initiateEsewaPaymentController = async (request, response) => {
+    try {
+        const { userId, products, totalAmount, delivery_address, date } = request.body;
+
+        if (!userId || !products || !totalAmount || !delivery_address) {
+            return response.status(400).json({
+                error: true,
+                success: false,
+                message: "Missing required fields"
+            });
+        }
+
+        const merchantId = process.env.ESEWA_MERCHANT_ID;
+        const secretKey = process.env.ESEWA_SECRET_KEY;
+        const environment = process.env.ESEWA_ENVIRONMENT || "test";
+
+        // Validate environment variables
+        if (!merchantId || !secretKey) {
+            return response.status(400).json({
+                error: true,
+                success: false,
+                message: "eSewa credentials not configured. Please set ESEWA_MERCHANT_ID and ESEWA_SECRET_KEY in .env file"
+            });
+        }
+
+        // Generate unique transaction ID
+        const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        // Calculate amount (eSewa expects amount in NPR)
+        const amount = parseFloat(totalAmount).toFixed(2);
+
+        // Create success and failure URLs - these should point to backend endpoints
+        const baseUrl = process.env.BACKEND_URL || `${request.protocol}://${request.get("host")}`;
+        const successUrl = `${baseUrl}/api/order/esewa-success?transaction_uuid=${transactionId}`;
+        const failureUrl = `${baseUrl}/api/order/esewa-failure?transaction_uuid=${transactionId}`;
+
+        // Store order data temporarily using transaction ID as key
+        esewaPendingOrders.set(transactionId, {
+            userId,
+            products,
+            delivery_address,
+            date: date || new Date().toLocaleString("en-US", {
+                month: "short",
+                day: "2-digit",
+                year: "numeric",
+            }),
+            totalAmount: amount,
+            createdAt: new Date()
+        });
+
+        // Clean up old entries (older than 1 hour)
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        for (const [key, value] of esewaPendingOrders.entries()) {
+            if (value.createdAt < oneHourAgo) {
+                esewaPendingOrders.delete(key);
+            }
+        }
+
+        // Create hash for eSewa payment
+        // eSewa v2 API signature format: Use HMAC-SHA256 with base64 encoding
+        // Signature is based on signed_field_names: total_amount,transaction_uuid,product_code
+        const productCode = environment === "live" ? (process.env.ESEWA_PRODUCT_CODE || "YOUR_PRODUCT_CODE") : "EPAYTEST";
+        
+        // eSewa v2 uses HMAC-SHA256 for signature
+        // Format: total_amount=amount,transaction_uuid=uuid,product_code=code
+        const signatureData = `total_amount=${amount},transaction_uuid=${transactionId},product_code=${productCode}`;
+        const hash = crypto.createHmac('sha256', secretKey).update(signatureData).digest('base64');
+
+        // Determine eSewa payment URL based on environment
+        const esewaPaymentUrl = environment === "live"
+            ? "https://epay.esewa.com.np/api/epay/main/v2/form"
+            : "https://rc-epay.esewa.com.np/api/epay/main/v2/form";
+
+        // Return payment URL and form data for frontend to submit
+        return response.status(200).json({
+            success: true,
+            error: false,
+            paymentUrl: esewaPaymentUrl,
+            formData: {
+                amount: amount,
+                tax_amount: "0",
+                total_amount: amount,
+                transaction_uuid: transactionId,
+                product_code: productCode,
+                product_service_charge: "0",
+                product_delivery_charge: "0",
+                success_url: successUrl,
+                failure_url: failureUrl,
+                signed_field_names: "total_amount,transaction_uuid,product_code",
+                signature: hash
+            },
+            transactionId: transactionId
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            message: error.message || error,
+            error: true,
+            success: false
+        });
+    }
+}
+
+
+export const verifyEsewaPaymentController = async (request, response) => {
+    try {
+        const { data, transaction_uuid, transaction_code, status, total_amount, product_code, signature } = request.query;
+
+        if (!transaction_uuid) {
+            const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+            return response.redirect(`${frontendUrl}/order/failed`);
+        }
+
+        // Retrieve stored order data
+        const storedOrderData = esewaPendingOrders.get(transaction_uuid);
+
+        if (!storedOrderData) {
+            console.error("Order data not found for transaction:", transaction_uuid);
+            const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+            return response.redirect(`${frontendUrl}/order/failed`);
+        }
+
+        const merchantId = process.env.ESEWA_MERCHANT_ID;
+        const secretKey = process.env.ESEWA_SECRET_KEY;
+
+        if (!merchantId || !secretKey) {
+            console.error("eSewa credentials not configured");
+            const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+            return response.redirect(`${frontendUrl}/order/failed`);
+        }
+
+        // Verify the signature from eSewa
+        // eSewa v2 verification: Use the same format as initiation
+        const productCode = process.env.ESEWA_ENVIRONMENT === "live" 
+            ? (process.env.ESEWA_PRODUCT_CODE || "YOUR_PRODUCT_CODE") 
+            : "EPAYTEST";
+        const signatureData = `total_amount=${total_amount},transaction_uuid=${transaction_uuid},product_code=${productCode}`;
+        const calculatedHash = crypto.createHmac('sha256', secretKey).update(signatureData).digest('base64');
+
+        // Check if payment was successful
+        if (status === "COMPLETE" || status === "success" || transaction_code) {
+            // Payment successful - create order
+            const { userId, products, delivery_address, date, totalAmount } = storedOrderData;
+
+            // Verify amount matches
+            if (parseFloat(total_amount) !== parseFloat(totalAmount)) {
+                console.error("Amount mismatch:", total_amount, totalAmount);
+                esewaPendingOrders.delete(transaction_uuid);
+                const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+                return response.redirect(`${frontendUrl}/order/failed`);
+            }
+
+            // Create order
+            let order = new OrderModel({
+                userId: userId,
+                products: products,
+                paymentId: transaction_uuid,
+                payment_status: "COMPLETED",
+                delivery_address: delivery_address,
+                totalAmt: parseFloat(total_amount),
+                date: date
+            });
+
+            order = await order.save();
+
+            // Update product stock
+            for (let i = 0; i < products.length; i++) {
+                const product = await ProductModel.findOne({ _id: products[i].productId });
+
+                if (product) {
+                    await ProductModel.findByIdAndUpdate(
+                        products[i].productId,
+                        {
+                            countInStock: parseInt(products[i].countInStock - products[i].quantity),
+                            sale: parseInt(product?.sale + products[i].quantity)
+                        },
+                        { new: true }
+                    );
+                }
+            }
+
+            // Send confirmation email
+            const user = await UserModel.findOne({ _id: userId });
+            if (user) {
+                const recipients = [user.email];
+                await sendEmailFun({
+                    sendTo: recipients,
+                    subject: "Order Confirmation",
+                    text: "",
+                    html: OrderConfirmationEmail(user.name, order)
+                });
+            }
+
+            // Clear cart
+            try {
+                await fetch(`${process.env.BACKEND_URL || request.protocol + "://" + request.get("host")}/api/cart/emptyCart/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${request.headers.authorization?.split(' ')[1] || ''}`
+                    }
+                });
+            } catch (e) {
+                console.error("Error clearing cart:", e);
+            }
+
+            // Remove from pending orders
+            esewaPendingOrders.delete(transaction_uuid);
+
+            // Redirect to success page
+            const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+            return response.redirect(`${frontendUrl}/order/success`);
+
+        } else {
+            // Payment failed or cancelled
+            esewaPendingOrders.delete(transaction_uuid);
+            const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+            return response.redirect(`${frontendUrl}/order/failed`);
+        }
+
+    } catch (error) {
+        console.error("eSewa verification error:", error);
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+        return response.redirect(`${frontendUrl}/order/failed`);
+    }
+}
+
+// Handle eSewa failure callback
+export const esewaFailureController = async (request, response) => {
+    try {
+        const { transaction_uuid } = request.query;
+        
+        if (transaction_uuid) {
+            esewaPendingOrders.delete(transaction_uuid);
+        }
+
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+        return response.redirect(`${frontendUrl}/order/failed`);
+    } catch (error) {
+        console.error("eSewa failure handler error:", error);
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+        return response.redirect(`${frontendUrl}/order/failed`);
+    }
 }

@@ -25,6 +25,8 @@ import Address from "./Pages/MyAccount/address";
 import { OrderSuccess } from "./Pages/Orders/success";
 import { OrderFailed } from "./Pages/Orders/failed";
 import SearchPage from "./Pages/Search";
+import BlogDetail from "./Pages/Blog";
+import Compare from "./Pages/Compare";
 
 
 const MyContext = createContext();
@@ -39,6 +41,7 @@ function App() {
   const [catData, setCatData] = useState([]);
   const [cartData, setCartData] = useState([]);
   const [myListData, setMyListData] = useState([]);
+  const [compareData, setCompareData] = useState([]);
 
   const [openCartPanel, setOpenCartPanel] = useState(false);
   const [openAddressPanel, setOpenAddressPanel] = useState(false);
@@ -147,6 +150,9 @@ function App() {
     if (type === "error") {
       toast.error(msg)
     }
+    if (type === "info") {
+      toast(msg, { icon: 'ℹ️' })
+    }
   }
 
 
@@ -212,6 +218,66 @@ function App() {
     })
   }
 
+  // Compare products functionality
+  useEffect(() => {
+    const savedCompare = localStorage.getItem('compareProducts');
+    if (savedCompare) {
+      try {
+        setCompareData(JSON.parse(savedCompare));
+      } catch (e) {
+        console.error('Error parsing compare data:', e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (compareData.length > 0) {
+      localStorage.setItem('compareProducts', JSON.stringify(compareData));
+    } else {
+      localStorage.removeItem('compareProducts');
+    }
+  }, [compareData]);
+
+  const addToCompare = (product) => {
+    const maxCompareItems = 4; // Limit to 4 products
+    
+    // Check if product is already in compare list
+    const isAlreadyAdded = compareData.some(item => item._id === product._id);
+    
+    if (isAlreadyAdded) {
+      alertBox("info", "Product is already in compare list");
+      return;
+    }
+
+    if (compareData.length >= maxCompareItems) {
+      alertBox("error", `You can compare maximum ${maxCompareItems} products`);
+      return;
+    }
+
+    const productToAdd = {
+      _id: product._id,
+      name: product.name,
+      images: product.images,
+      price: product.price,
+      oldPrice: product.oldPrice,
+      rating: product.rating,
+      brand: product.brand,
+      discount: product.discount,
+      description: product.description,
+      size: product.size,
+      productRam: product.productRam,
+      productWeight: product.productWeight
+    };
+
+    setCompareData([...compareData, productToAdd]);
+    alertBox("success", "Product added to compare");
+  };
+
+  const removeFromCompare = (productId) => {
+    setCompareData(compareData.filter(item => item._id !== productId));
+    alertBox("success", "Product removed from compare");
+  };
+
   const values = {
     openProductDetailsModal,
     setOpenProductDetailsModal,
@@ -238,6 +304,10 @@ function App() {
     setMyListData,
     getMyListData,
     getUserDetails,
+    compareData,
+    setCompareData,
+    addToCompare,
+    removeFromCompare,
     setAddressMode,
     addressMode,
     addressId,
@@ -283,6 +353,8 @@ function App() {
             <Route path={"/order/failed"} exact={true} element={<OrderFailed />} />
             <Route path={"/address"} exact={true} element={<Address />} />
             <Route path={"/search"} exact={true} element={<SearchPage />} />
+            <Route path={"/blog/:id"} exact={true} element={<BlogDetail />} />
+            <Route path={"/compare"} exact={true} element={<Compare />} />
           </Routes>
           <Footer />
         </MyContext.Provider>

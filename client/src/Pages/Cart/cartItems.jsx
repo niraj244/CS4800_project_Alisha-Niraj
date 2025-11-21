@@ -7,6 +7,7 @@ import Rating from "@mui/material/Rating";
 import { IoCloseSharp } from "react-icons/io5";
 import { deleteData, editData, fetchDataFromApi } from "../../utils/api";
 import { MyContext } from "../../App";
+import { formatPrice } from "../../utils/currency";
 
 const CartItems = (props) => {
   const [sizeanchorEl, setSizeAnchorEl] = useState(null);
@@ -350,15 +351,21 @@ const CartItems = (props) => {
         </div>
 
         <div className="flex items-center gap-4 mt-2">
-          <span className="price text-[14px]  font-[600]">&#x20b9;{props?.item?.price}</span>
-
-          <span className="oldPrice line-through text-gray-500 text-[14px] font-[500]">
-            &#x20b9;{props?.item?.oldPrice}
-          </span>
-
-          <span className="price text-primary text-[14px]  font-[600]">
-            {props?.item?.discount}% OFF
-          </span>
+          {props?.item?.discount > 0 ? (
+            <>
+              <span className="oldPrice line-through text-gray-500 text-[14px] font-[500]">
+                {formatPrice(props?.item?.oldPrice)}
+              </span>
+              <span className="price text-primary text-[14px]  font-[600]">
+                {formatPrice(props?.item?.price)}
+              </span>
+              <span className="price text-primary text-[14px]  font-[600]">
+                {props?.item?.discount}% OFF
+              </span>
+            </>
+          ) : (
+            <span className="price text-[14px]  font-[600]">{formatPrice(props?.item?.price)}</span>
+          )}
         </div>
       </div>
     </div>

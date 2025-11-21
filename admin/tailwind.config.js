@@ -7,11 +7,14 @@ export default {
   theme: {
     extend: {
       colors:{
-        primary:'#3872fa'
+        primary:'#FFA239'
       },
       backgroundColor:{
-        primary:'#3872fa'
-      }
+        primary:'#FFA239'
+      },
+      fontFamily: {
+        sans: ['Anta', 'sans-serif'],
+      },
     },
   },
   plugins: [],

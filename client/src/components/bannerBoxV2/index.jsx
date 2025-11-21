@@ -1,13 +1,15 @@
 import React from "react";
 import "../bannerBoxV2/style.css";
 import { Link } from "react-router-dom";
+import { formatPrice } from "../../utils/currency";
 
 const BannerBoxV2 = (props) => {
   return (
-    <div className="bannerBoxV2 box w-full overflow-hidden rounded-md group relative">
+    <div className="bannerBoxV2 box w-full overflow-hidden rounded-md group relative flex items-center justify-center bg-gray-50">
       <img
         src={props.image}
-        className="w-full transition-all duration-150 group-hover:scale-105"
+        className="w-full h-full object-contain transition-all duration-150 group-hover:scale-[1.02]"
+        alt={props?.item?.bannerTitle || "Banner"}
       />
 
       <div
@@ -18,7 +20,7 @@ const BannerBoxV2 = (props) => {
         <h2 className="text-[14px] md:text-[18px] font-[600]">{props?.item?.bannerTitle}</h2>
 
         <span className="text-[20px] text-primary font-[600] w-full">
-          &#x20b9;{props?.item?.price}
+          {formatPrice(props?.item?.price)}
         </span>
 
         <div className="w-full">

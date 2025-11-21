@@ -130,7 +130,7 @@ const EditCategory = () => {
 
                                         <div className='uploadBox p-0 rounded-md overflow-hidden border border-dashed border-[rgba(0,0,0,0.3)] h-[150px] w-[100%] bg-gray-100 cursor-pointer hover:bg-gray-200 flex items-center justify-center flex-col relative'>
 
-                                            <img src={image} className='w-100' />
+                                            <img src={image} className='w-full h-full object-contain' alt="category preview" />
                                         </div>
                                     </div>
                                 )

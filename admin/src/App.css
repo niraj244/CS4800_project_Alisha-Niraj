@@ -1,5 +1,5 @@
-body{font-family: "Montserrat", serif; background: #f1f1f1;}
-.MuiBadge-badge {background: #ff5252 !important;}
+body{font-family: "Anta", sans-serif; background: #f1f1f1;}
+.MuiBadge-badge {background: #FFA239 !important;}
 
 .ReactCollapse--collapse {
     transition: height 300ms;
@@ -12,8 +12,8 @@ body{font-family: "Montserrat", serif; background: #f1f1f1;}
 
   .btn{ padding: 8px 20px !important;}
   .btn svg{font-size: 20px;}
-  .btn-blue{background: #3872fa !important; color: #fff !important; padding: 8px 20px !important; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, .1), 0 1px 2px -1px rgba(0, 0, 0, .1);}
-  .btn-blue:hover{background: #3067e5 !important;}
+  .btn-blue{background: #FFA239 !important; color: #fff !important; padding: 8px 20px !important; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, .1), 0 1px 2px -1px rgba(0, 0, 0, .1);}
+  .btn-blue:hover{background: #e6912a !important;}
   .btn-sm{padding: 6px 20px !important; font-size: 13px !important;}
   .btn-lg{padding: 8px 20px !important; font-size: 16px !important;}
 

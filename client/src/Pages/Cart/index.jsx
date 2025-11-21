@@ -6,6 +6,7 @@ import CartItems from "./cartItems";
 import { MyContext } from "../../App";
 import { fetchDataFromApi } from "../../utils/api";
 import { Link } from "react-router-dom";
+import { formatPrice } from "../../utils/currency";
 
 const CartPage = () => {
 
@@ -105,10 +106,9 @@ const CartPage = () => {
               <span className="text-[14px] font-[500]">Subtotal</span>
               <span className="text-primary font-bold">
                 {
-                  (context.cartData?.length !== 0 ?
+                  formatPrice(context.cartData?.length !== 0 ?
                     context.cartData?.map(item => parseInt(item.price) * item.quantity)
                       .reduce((total, value) => total + value, 0) : 0)
-                    ?.toLocaleString('en-US', { style: 'currency', currency: 'INR' })
                 }
               </span>
             </p>
@@ -127,10 +127,9 @@ const CartPage = () => {
               <span className="text-[14px] font-[500]">Total</span>
               <span className="text-primary font-bold">
                 {
-                  (context.cartData?.length !== 0 ?
+                  formatPrice(context.cartData?.length !== 0 ?
                     context.cartData?.map(item => parseInt(item.price) * item.quantity)
                       .reduce((total, value) => total + value, 0) : 0)
-                    ?.toLocaleString('en-US', { style: 'currency', currency: 'INR' })
                 }
               </span>
             </p>

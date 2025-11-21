@@ -63,7 +63,7 @@ const DashboardBoxes = (props) => {
 
 
         <SwiperSlide>
-          <div className="box bg-[#3872fa] p-5 py-6 cursor-pointer hover:bg-[#346ae8] rounded-md border border-[rgba(0,0,0,0.1)] flex items-center gap-4">
+          <div className="box bg-[#FFA239] p-5 py-6 cursor-pointer hover:bg-[#e6912a] rounded-md border border-[rgba(0,0,0,0.1)] flex items-center gap-4">
             <GoGift className="text-[40px] text-[#fff]" />
             <div className="info w-[80%]">
               <h3 className="text-white">Total Orders</h3>
