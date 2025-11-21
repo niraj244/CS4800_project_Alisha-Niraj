@@ -1,5 +1,5 @@
 import axios from "axios";
-const apiUrl = import.meta.env.VITE_API_URL;
+const apiUrl = import.meta.env.VITE_API_URL || "https://e-commerce-website-backend-wy5z.onrender.com";
 
 export const postData = async (url, formData) => {
     try {
