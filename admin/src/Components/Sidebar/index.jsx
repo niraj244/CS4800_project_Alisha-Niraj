@@ -12,7 +12,6 @@ import { FaAngleDown } from "react-icons/fa6";
 import { FaCheckDouble } from "react-icons/fa6";
 import { Collapse } from "react-collapse";
 import { MyContext } from "../../App";
-import { SiBloglovin } from "react-icons/si";
 import { fetchDataFromApi } from "../../utils/api";
 import { IoLogoBuffer } from "react-icons/io";
 
@@ -378,54 +377,6 @@ const Sidebar = () => {
                   }}>
                     <span className="block w-[5px] h-[5px] rounded-full bg-[rgba(0,0,0,0.2)]"></span>
                     Add Banner
-                  </Button>
-                </li>
-
-
-              </ul>
-            </Collapse>
-          </li>
-
-
-          <li>
-            <Button
-              className="w-full !capitalize !justify-start flex gap-3 text-[14px] !text-[rgba(0,0,0,0.8)] !font-[500] items-center !py-2 hover:!bg-[#f1f1f1]"
-              onClick={() => isOpenSubMenu(6)}
-            >
-              <SiBloglovin className="text-[18px]" />
-              <span>Blogs</span>
-              <span className="ml-auto w-[30px] h-[30px] flex items-center justify-center">
-                <FaAngleDown
-                  className={`transition-all ${submenuIndex === 6 ? "rotate-180" : ""
-                    }`}
-                />
-              </span>
-            </Button>
-
-            <Collapse isOpened={submenuIndex === 6 ? true : false}>
-              <ul className="w-full">
-                <li className="w-full">
-                  <Link to="/blog/List" onClick={() => {
-                    context?.windowWidth < 992 && context?.setisSidebarOpen(false)
-                    setSubmenuIndex(null)
-                  }}>
-                    <Button className="!text-[rgba(0,0,0,0.7)] !capitalize !justify-start !w-full !text-[13px] !font-[500] !pl-9 flex gap-3">
-                      <span className="block w-[5px] h-[5px] rounded-full bg-[rgba(0,0,0,0.2)]"></span>
-                      Blog List
-                    </Button>
-                  </Link>
-                </li>
-                <li className="w-full">
-                  <Button className="!text-[rgba(0,0,0,0.7)] !capitalize !justify-start !w-full !text-[13px] !font-[500] !pl-9 flex gap-3" onClick={() => {
-                    context.setIsOpenFullScreenPanel({
-                      open: true,
-                      model: "Add Blog"
-                    })
-                    context?.windowWidth < 992 && context?.setisSidebarOpen(false)
-                    setSubmenuIndex(null)
-                  }}>
-                    <span className="block w-[5px] h-[5px] rounded-full bg-[rgba(0,0,0,0.2)]"></span>
-                    Add Blog
                   </Button>
                 </li>
 
