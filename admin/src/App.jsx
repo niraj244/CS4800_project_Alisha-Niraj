@@ -544,7 +544,7 @@ function App() {
 
       fetchDataFromApi(`/api/user/user-details`).then((res) => {
         if (res?.error === false && res?.data) {
-          setUserData(res.data);
+        setUserData(res.data);
         } else if (res?.error === true || res?.message === "You have not login") {
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");

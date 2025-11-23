@@ -5,9 +5,6 @@ import { CgLogIn } from "react-icons/cg";
 import { FaRegUser } from "react-icons/fa6";
 import LoadingButton from "@mui/lab/LoadingButton";
 import { FcGoogle } from "react-icons/fc";
-import { BsFacebook } from "react-icons/bs";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Checkbox from "@mui/material/Checkbox";
 import { FaRegEye } from "react-icons/fa";
 import { FaEyeSlash } from "react-icons/fa";
 
@@ -32,8 +29,7 @@ const SignUp = () => {
     const [formFields, setFormFields] = useState({
         name: "",
         email: "",
-        password: "",
-        requestAdmin: false
+        password: ""
     })
 
     const context = useContext(MyContext);
@@ -86,8 +82,7 @@ const SignUp = () => {
         postData("/api/user/register", {
             name: formFields.name,
             email: formFields.email,
-            password: formFields.password,
-            requestAdmin: formFields.requestAdmin
+            password: formFields.password
         }).then((res) => {
             console.log(res)
 
@@ -99,8 +94,7 @@ const SignUp = () => {
                 setFormFields({
                     name: "",
                     email: "",
-                    password: "",
-                    requestAdmin: false
+                    password: ""
                 })
 
                 history("/verify-account")
@@ -115,63 +109,79 @@ const SignUp = () => {
     }
 
 
-    const authWithGoogle = () => {
+    const authWithGoogle = async () => {
+        try {
+            if (!firebaseApp) {
+                console.error("Firebase app is not initialized. Check Firebase configuration.");
+                context.alertBox("error", "Firebase is not properly configured. Please check your environment variables.");
+                return;
+            }
+            
+            if (!auth || !googleProvider) {
+                console.error("Firebase Auth is not initialized.");
+                context.alertBox("error", "Firebase authentication is not properly configured. Please check your Firebase settings.");
+                return;
+            }
+            
+            setLoadingGoogle(true);
+            
+            const result = await signInWithPopup(auth, googleProvider);
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            const user = result.user;
 
-        setLoadingGoogle(true);
+            const fields = {
+                name: user.displayName || user.providerData[0]?.displayName || "User",
+                email: user.email || user.providerData[0]?.email,
+                password: null,
+                avatar: user.photoURL || user.providerData[0]?.photoURL || "",
+                mobile: user.phoneNumber || user.providerData[0]?.phoneNumber || "",
+                role: "USER"
+            };
 
-        signInWithPopup(auth, googleProvider)
-            .then((result) => {
-                // This gives you a Google Access Token. You can use it to access the Google API.
-                const credential = GoogleAuthProvider.credentialFromResult(result);
-                const token = credential.accessToken;
-                // The signed-in user info.
-                const user = result.user;
+            if (!fields.email) {
+                setLoadingGoogle(false);
+                context.alertBox("error", "Failed to get email from Google account");
+                return;
+            }
 
-                const fields = {
-                    name: user.providerData[0].displayName,
-                    email: user.providerData[0].email,
-                    password: null,
-                    avatar: user.providerData[0].photoURL,
-                    mobile: user.providerData[0].phoneNumber,
-                    role: "USER"
-                };
+            const res = await postData("/api/user/authWithGoogle", fields);
 
-
-                postData("/api/user/authWithGoogle", fields).then((res) => {
-
-                    if (res?.error !== true) {
-                        setLoadingGoogle(false);
-                        setIsLoading(false);
-                        context.alertBox("success", res?.message);
-                        localStorage.setItem("userEmail", fields.email)
-                        localStorage.setItem("accessToken", res?.data?.accesstoken);
-                        localStorage.setItem("refreshToken", res?.data?.refreshToken);
-
-                        context.setIsLogin(true);
-
-                        history("/")
-                    } else {
-                        context.alertBox("error", res?.message);
-                        setIsLoading(false);
-                    }
-
-                })
-
-                console.log(user)
-                // IdP data available using getAdditionalUserInfo(result)
-                // ...
-            }).catch((error) => {
-                // Handle Errors here.
-                const errorCode = error.code;
-                const errorMessage = error.message;
-                // The email of the user's account used.
-                const email = error.customData.email;
-                // The AuthCredential type that was used.
-                const credential = GoogleAuthProvider.credentialFromError(error);
-                // ...
-            });
-
-
+            if (res?.error !== true) {
+                setLoadingGoogle(false);
+                context.alertBox("success", res?.message || "Sign up successful");
+                localStorage.setItem("userEmail", fields.email);
+                localStorage.setItem("accessToken", res?.data?.accesstoken);
+                localStorage.setItem("refreshToken", res?.data?.refreshToken);
+                context.setIsLogin(true);
+                history("/");
+            } else {
+                setLoadingGoogle(false);
+                context.alertBox("error", res?.message || "Sign up failed. Please try again.");
+            }
+        } catch (error) {
+            setLoadingGoogle(false);
+            const errorCode = error.code;
+            const errorMessage = error.message;
+            
+            console.error("Google login error - Code:", errorCode, "Message:", errorMessage, "Full error:", error);
+            
+            if (errorCode === "auth/popup-closed-by-user") {
+                context.alertBox("error", "Login cancelled. Please try again.");
+            } else if (errorCode === "auth/popup-blocked") {
+                context.alertBox("error", "Popup blocked. Please allow popups for this site.");
+            } else if (errorCode === "auth/network-request-failed") {
+                context.alertBox("error", "Network error. Please check your connection.");
+            } else if (errorCode === "auth/unauthorized-domain") {
+                context.alertBox("error", "This domain is not authorized for Google login. Please add this domain to Firebase authorized domains.");
+                console.error("Domain authorization error. Make sure your Vercel domain is added to Firebase Console → Authentication → Settings → Authorized domains");
+            } else if (errorCode === "auth/operation-not-allowed") {
+                context.alertBox("error", "Google sign-in is not enabled. Please contact support.");
+            } else if (errorCode === "auth/configuration-not-found") {
+                context.alertBox("error", "Firebase configuration error. Please check your Firebase settings.");
+            } else {
+                context.alertBox("error", errorMessage || "Failed to sign up with Google. Please try again.");
+            }
+        }
     }
 
     return (
@@ -280,23 +290,6 @@ const SignUp = () => {
                                 )}
                             </Button>
                         </div>
-                    </div>
-
-                    <div className="form-group mb-4 w-full">
-                        <FormControlLabel
-                            control={
-                                <Checkbox 
-                                    checked={formFields.requestAdmin}
-                                    onChange={(e) => setFormFields({...formFields, requestAdmin: e.target.checked})}
-                                    disabled={isLoading}
-                                />
-                            }
-                            label="Request Admin Access"
-                            className="text-[14px]"
-                        />
-                        <p className="text-[12px] text-gray-500 mt-1 ml-8">
-                            Check this if you want to request admin privileges. Your request will be reviewed by the super admin.
-                        </p>
                     </div>
 
                     <div className="flex items-center justify-between mb-4">
