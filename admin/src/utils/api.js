@@ -17,6 +17,7 @@ const getApiUrl = () => {
 };
 
 const apiUrl = getApiUrl();
+console.log('Admin API URL:', apiUrl);
 
 export const postData = async (url, formData) => {
     try {
@@ -62,8 +63,11 @@ export const fetchDataFromApi = async (url) => {
         const { data } = await axios.get(apiUrl + url,params)
         return data;
     } catch (error) {
-        console.log(error);
-        return error;
+        console.error('API Error:', error.response?.data || error.message);
+        if (error.response) {
+            return error.response.data;
+        }
+        return { error: true, message: error.message };
     }
 }
 
