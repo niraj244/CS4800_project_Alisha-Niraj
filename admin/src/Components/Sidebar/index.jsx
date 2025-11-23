@@ -9,6 +9,7 @@ import { TbCategory } from "react-icons/tb";
 import { IoBagCheckOutline } from "react-icons/io5";
 import { IoMdLogOut } from "react-icons/io";
 import { FaAngleDown } from "react-icons/fa6";
+import { FaCheckDouble } from "react-icons/fa6";
 import { Collapse } from "react-collapse";
 import { MyContext } from "../../App";
 import { SiBloglovin } from "react-icons/si";
@@ -292,6 +293,21 @@ const Sidebar = () => {
               </Button>
             </Link>
           </li>
+
+          {context?.userData?.role === "ADMIN" && (
+            <li>
+              <Link to="/admin-approval"
+                onClick={() => {
+                  context?.windowWidth < 992 && context?.setisSidebarOpen(false)
+                  setSubmenuIndex(null)
+                }}
+              >
+                <Button className="w-full !capitalize !justify-start flex gap-3 text-[14px] !text-[rgba(0,0,0,0.8)] !font-[500] items-center !py-2 hover:!bg-[#f1f1f1]">
+                  <FaCheckDouble className="text-[18px]" /> <span>Admin Approval</span>
+                </Button>
+              </Link>
+            </li>
+          )}
 
 
 

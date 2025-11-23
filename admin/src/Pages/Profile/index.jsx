@@ -41,7 +41,7 @@ const Profile = () => {
     const context = useContext(MyContext);
     const history = useNavigate();
 
-    const [selectedValue, setSelectedValue] = useState('H No 222 Street No 6 Adarsh Mohalla');
+    const [selectedValue, setSelectedValue] = useState('');
 
     const handleChange = (event) => {
         setSelectedValue(event.target.value);
@@ -256,8 +256,38 @@ const Profile = () => {
                         User Profile
                     </h2>
 
-
-                    <Button className="!ml-auto" onClick={() => setisChangePasswordFormShow(!isChangePasswordFormShow)}>Change Password</Button>
+                    <div className="flex items-center gap-2">
+                        {context?.userData?.role !== "ADMIN" && context?.userData?.adminRequestStatus !== 'pending' && (
+                            <Button 
+                                className="!bg-orange-500 !text-white" 
+                                onClick={async () => {
+                                    try {
+                                        const res = await postData('/api/user/request-admin');
+                                        if (res?.error === false) {
+                                            context.alertBox("success", res?.message || "Admin request submitted successfully");
+                                            const userRes = await fetchDataFromApi('/api/user/user-details');
+                                            if (userRes?.data) {
+                                                context.setUserData(userRes.data);
+                                            }
+                                        } else {
+                                            context.alertBox("error", res?.message || "Failed to submit admin request");
+                                        }
+                                    } catch (error) {
+                                        console.error('Error requesting admin:', error);
+                                        context.alertBox("error", "Failed to submit admin request");
+                                    }
+                                }}
+                            >
+                                Request Admin
+                            </Button>
+                        )}
+                        {context?.userData?.adminRequestStatus === 'pending' && (
+                            <Button className="!bg-yellow-500 !text-white" disabled>
+                                Admin Request Pending
+                            </Button>
+                        )}
+                        <Button className="!ml-auto" onClick={() => setisChangePasswordFormShow(!isChangePasswordFormShow)}>Change Password</Button>
+                    </div>
                 </div>
 
 
@@ -326,7 +356,7 @@ const Profile = () => {
 
                         <div className="col">
                             <PhoneInput
-                                defaultCountry="in"
+                                defaultCountry="np"
                                 value={phone}
                                 disabled={isLoading === true ? true : false}
                                 onChange={(phone) => {

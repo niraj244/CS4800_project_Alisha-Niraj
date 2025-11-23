@@ -1,5 +1,22 @@
 import axios from "axios";
-const apiUrl = import.meta.env.VITE_API_URL || "https://e-commerce-website-backend-wy5z.onrender.com";
+
+// Auto-detect local vs production environment
+const getApiUrl = () => {
+  // If VITE_API_URL is explicitly set, use it (highest priority)
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // If running on localhost, use local backend server
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return 'http://localhost:8000';
+  }
+  
+  // Otherwise, use production Render URL
+  return 'https://e-commerce-website-backend-wy5z.onrender.com';
+};
+
+const apiUrl = getApiUrl();
 
 export const postData = async (url, formData) => {
     try {

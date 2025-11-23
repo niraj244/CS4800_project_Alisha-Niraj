@@ -22,7 +22,7 @@ export async function registerUserController(request, response) {
     try {
         let user;
 
-        const { name, email, password } = request.body;
+        const { name, email, password, requestAdmin } = request.body;
         if (!name || !email || !password) {
             return response.status(400).json({
                 message: "provide email, name, password",
@@ -53,7 +53,8 @@ export async function registerUserController(request, response) {
             name: name,
             otp: verifyCode,
             otpExpires: Date.now() + 600000,
-
+            adminRequestStatus: requestAdmin === true ? 'pending' : 'none',
+            requestedAdminAt: requestAdmin === true ? new Date() : null
         });
 
         await user.save();
@@ -974,4 +975,196 @@ export async function deleteMultiple(request, response) {
         })
     }
 
+}
+
+export async function requestAdminController(request, response) {
+    try {
+        const userId = request.userId;
+        
+        const user = await UserModel.findById(userId);
+        
+        if (!user) {
+            return response.status(404).json({
+                message: "User not found",
+                error: true,
+                success: false
+            });
+        }
+
+        if (user.role === 'ADMIN') {
+            return response.status(400).json({
+                message: "You are already an admin",
+                error: true,
+                success: false
+            });
+        }
+
+        if (user.adminRequestStatus === 'pending') {
+            return response.status(400).json({
+                message: "You already have a pending admin request",
+                error: true,
+                success: false
+            });
+        }
+
+        user.adminRequestStatus = 'pending';
+        user.requestedAdminAt = new Date();
+        await user.save();
+
+        return response.status(200).json({
+            message: "Admin request submitted successfully. Waiting for approval.",
+            error: false,
+            success: true
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            message: error.message || error,
+            error: true,
+            success: false
+        });
+    }
+}
+
+export async function getAdminRequestsController(request, response) {
+    try {
+        const adminId = request.userId;
+        
+        const admin = await UserModel.findById(adminId);
+        
+        if (!admin || admin.role !== 'ADMIN') {
+            return response.status(403).json({
+                message: "Only admins can view admin requests",
+                error: true,
+                success: false
+            });
+        }
+
+        const pendingRequests = await UserModel.find({
+            adminRequestStatus: 'pending'
+        }).select('name email requestedAdminAt createdAt');
+
+        return response.status(200).json({
+            message: "Admin requests fetched successfully",
+            error: false,
+            success: true,
+            data: pendingRequests
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            message: error.message || error,
+            error: true,
+            success: false
+        });
+    }
+}
+
+export async function approveAdminController(request, response) {
+    try {
+        const adminId = request.userId;
+        const { userId } = request.params;
+        
+        const admin = await UserModel.findById(adminId);
+        
+        if (!admin || admin.role !== 'ADMIN') {
+            return response.status(403).json({
+                message: "Only admins can approve admin requests",
+                error: true,
+                success: false
+            });
+        }
+
+        const user = await UserModel.findById(userId);
+        
+        if (!user) {
+            return response.status(404).json({
+                message: "User not found",
+                error: true,
+                success: false
+            });
+        }
+
+        if (user.adminRequestStatus !== 'pending') {
+            return response.status(400).json({
+                message: "This user does not have a pending admin request",
+                error: true,
+                success: false
+            });
+        }
+
+        user.role = 'ADMIN';
+        user.adminRequestStatus = 'approved';
+        user.approvedBy = adminId;
+        await user.save();
+
+        return response.status(200).json({
+            message: "Admin access approved successfully",
+            error: false,
+            success: true,
+            data: {
+                userId: user._id,
+                name: user.name,
+                email: user.email
+            }
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            message: error.message || error,
+            error: true,
+            success: false
+        });
+    }
+}
+
+export async function rejectAdminController(request, response) {
+    try {
+        const adminId = request.userId;
+        const { userId } = request.params;
+        
+        const admin = await UserModel.findById(adminId);
+        
+        if (!admin || admin.role !== 'ADMIN') {
+            return response.status(403).json({
+                message: "Only admins can reject admin requests",
+                error: true,
+                success: false
+            });
+        }
+
+        const user = await UserModel.findById(userId);
+        
+        if (!user) {
+            return response.status(404).json({
+                message: "User not found",
+                error: true,
+                success: false
+            });
+        }
+
+        if (user.adminRequestStatus !== 'pending') {
+            return response.status(400).json({
+                message: "This user does not have a pending admin request",
+                error: true,
+                success: false
+            });
+        }
+
+        user.adminRequestStatus = 'rejected';
+        await user.save();
+
+        return response.status(200).json({
+            message: "Admin request rejected",
+            error: false,
+            success: true
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            message: error.message || error,
+            error: true,
+            success: false
+        });
+    }
 }

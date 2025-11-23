@@ -1,12 +1,9 @@
 import React, { useContext, useEffect, useState } from "react";
 import Button from "@mui/material/Button";
-import Badge from "@mui/material/Badge";
-import { styled } from "@mui/material/styles";
 import IconButton from "@mui/material/IconButton";
 
 import { RiMenu2Line } from "react-icons/ri";
 
-import { FaRegBell } from "react-icons/fa";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Divider from "@mui/material/Divider";
@@ -42,15 +39,6 @@ import EditHomeSlide from "../../Pages/HomeSliderBanners/editHomeSlide";
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
-
-const StyledBadge = styled(Badge)(({ theme }) => ({
-  "& .MuiBadge-badge": {
-    right: -3,
-    top: 13,
-    border: `2px solid ${theme.palette.background.paper}`,
-    padding: "0 4px",
-  },
-}));
 
 
 const Header = () => {
@@ -138,11 +126,15 @@ const Header = () => {
         </div>
 
         <div className="part2  flex items-center justify-end gap-5">
-          <IconButton aria-label="cart">
-            <StyledBadge badgeContent={4} color="secondary">
-              <FaRegBell />
-            </StyledBadge>
-          </IconButton>
+          <Link 
+            to={context?.userData?.role === "ADMIN" ? "/admin-approval" : "/siteSettings"}
+          >
+            <Button 
+              className="btn-blue btn-sm !capitalize !rounded-full"
+            >
+              {context?.userData?.role === "ADMIN" ? "Admin" : "Not Admin"}
+            </Button>
+          </Link>
 
           {context.isLogin === true ? (
             <div className="relative">

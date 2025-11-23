@@ -32,7 +32,8 @@ const SignUp = () => {
     const [formFields, setFormFields] = useState({
         name: "",
         email: "",
-        password: ""
+        password: "",
+        requestAdmin: false
     })
 
     const context = useContext(MyContext);
@@ -82,17 +83,24 @@ const SignUp = () => {
         }
 
 
-        postData("/api/user/register", formFields).then((res) => {
+        postData("/api/user/register", {
+            name: formFields.name,
+            email: formFields.email,
+            password: formFields.password,
+            requestAdmin: formFields.requestAdmin
+        }).then((res) => {
             console.log(res)
 
             if (res?.error !== true) {
                 setIsLoading(false);
                 context.alertBox("success", res?.message);
                 localStorage.setItem("userEmail", formFields.email)
+                
                 setFormFields({
                     name: "",
                     email: "",
-                    password: ""
+                    password: "",
+                    requestAdmin: false
                 })
 
                 history("/verify-account")
@@ -274,8 +282,22 @@ const SignUp = () => {
                         </div>
                     </div>
 
-
-
+                    <div className="form-group mb-4 w-full">
+                        <FormControlLabel
+                            control={
+                                <Checkbox 
+                                    checked={formFields.requestAdmin}
+                                    onChange={(e) => setFormFields({...formFields, requestAdmin: e.target.checked})}
+                                    disabled={isLoading}
+                                />
+                            }
+                            label="Request Admin Access"
+                            className="text-[14px]"
+                        />
+                        <p className="text-[12px] text-gray-500 mt-1 ml-8">
+                            Check this if you want to request admin privileges. Your request will be reviewed by the super admin.
+                        </p>
+                    </div>
 
                     <div className="flex items-center justify-between mb-4">
                         <span className="text-[14px]">Already have an account?</span>
