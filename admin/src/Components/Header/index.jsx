@@ -81,13 +81,26 @@ const Header = () => {
   const logout = () => {
     setAnchorMyAcc(null);
 
-    fetchDataFromApi(`/api/user/logout?token=${localStorage.getItem('accessToken')}`, { withCredentials: true }).then((res) => {
+    fetchDataFromApi(`/api/user/logout`).then((res) => {
       if (res?.error === false) {
         context.setIsLogin(false);
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         history("/login")
+      } else {
+        // Even if API call fails, clear local storage and redirect
+        context.setIsLogin(false);
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        history("/login")
       }
+    }).catch((error) => {
+      console.error('Logout error:', error);
+      // Clear local storage and redirect even on error
+      context.setIsLogin(false);
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      history("/login")
     })
   }
 

@@ -569,15 +569,21 @@ function App() {
       setIsLogin(true);
 
       fetchDataFromApi(`/api/user/user-details`).then((res) => {
-        setUserData(res.data);
-        if (res?.response?.data?.message === "You have not login") {
+        if (res?.error === false && res?.data) {
+          setUserData(res.data);
+        } else if (res?.error === true || res?.message === "You have not login") {
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
           setIsLogin(false);
-          alertBox("error", "Your session is closed please login again")
-
-          //window.location.href = "/login"
+          alertBox("error", res?.message || "Your session is closed please login again")
+        } else {
+          console.error('Failed to fetch user details:', res);
         }
+      }).catch((error) => {
+        console.error('Error fetching user details:', error);
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        setIsLogin(false);
       })
 
     } else {

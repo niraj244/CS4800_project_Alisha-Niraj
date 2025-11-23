@@ -25,17 +25,16 @@ export const postData = async (url, formData) => {
         const response = await fetch(apiUrl + url, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`, // Include your API key in the Authorization header
-                'Content-Type': 'application/json', // Adjust the content type as needed
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                'Content-Type': 'application/json',
               },
-
+            credentials: 'include',
             body: JSON.stringify(formData)
         });
 
 
         if (response.ok) {
             const data = await response.json();
-            //console.log(data)
             return data;
         } else {
             const errorData = await response.json();
@@ -44,6 +43,7 @@ export const postData = async (url, formData) => {
 
     } catch (error) {
         console.error('Error:', error);
+        return { error: true, message: error.message };
     }
 
 }
@@ -54,10 +54,10 @@ export const fetchDataFromApi = async (url) => {
     try {
         const params={
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`, // Include your API key in the Authorization header
-                'Content-Type': 'application/json', // Adjust the content type as needed
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                'Content-Type': 'application/json',
               },
-        
+            withCredentials: true
         } 
 
         const { data } = await axios.get(apiUrl + url,params)
@@ -75,10 +75,10 @@ export const fetchDataFromApi = async (url) => {
 export const uploadImage = async (url, updatedData ) => {
     const params={
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`, // Include your API key in the Authorization header
-            'Content-Type': 'multipart/form-data', // Adjust the content type as needed
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            'Content-Type': 'multipart/form-data',
           },
-    
+        withCredentials: true
     } 
 
     var response;
@@ -94,10 +94,10 @@ export const uploadImage = async (url, updatedData ) => {
 export const uploadImages = async (url, formData ) => {
     const params={
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`, // Include your API key in the Authorization header
-            'Content-Type': 'multipart/form-data', // Adjust the content type as needed
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            'Content-Type': 'multipart/form-data',
           },
-    
+        withCredentials: true
     } 
 
     var response;
@@ -114,10 +114,10 @@ export const uploadImages = async (url, formData ) => {
 export const editData = async (url, updatedData ) => {
     const params={
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`, // Include your API key in the Authorization header
-            'Content-Type': 'application/json', // Adjust the content type as needed
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            'Content-Type': 'application/json',
           },
-    
+        withCredentials: true
     } 
 
     var response;
