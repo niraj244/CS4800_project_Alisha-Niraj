@@ -35,8 +35,6 @@ import { AddBannerV1 } from "../../Pages/Banners/addBannerV1";
 import { EditBannerV1 } from "../../Pages/Banners/editBannerV1";
 import { BannerList2_AddBanner } from "../../Pages/Banners/bannerList2_AddBanner";
 import { BannerList2_Edit_Banner } from "../../Pages/Banners/bannerList2_Edit_Banner";
-import AddBlog from "../../Pages/Blog/addBlog";
-import EditBlog from "../../Pages/Blog/editBlog";
 import EditHomeSlide from "../../Pages/HomeSliderBanners/editHomeSlide";
 
 const Transition = React.forwardRef(function Transition(props, ref) {
@@ -349,13 +347,6 @@ const Header = () => {
         }
 
 
-        {
-          context?.isOpenFullScreenPanel?.model === "Add Blog" && <AddBlog />
-        }
-
-        {
-          context?.isOpenFullScreenPanel?.model === "Edit Blog" && <EditBlog />
-        }
 
 
       </Dialog>

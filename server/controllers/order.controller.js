@@ -48,7 +48,7 @@ export const createOrderController = async (request, response) => {
         const recipients = [];
         recipients.push(user?.email);
 
-        // Send verification email
+        // sending email
         await sendEmailFun({
             sendTo: recipients,
             subject: "Order Confirmation",
@@ -155,11 +155,11 @@ export async function getTotalOrdersCountController(request, response) {
 
 
 function getPayPalClient() {
-    // Check if credentials are configured
+    // checking paypal mode
     const isLive = process.env.PAYPAL_MODE === "live" || process.env.PAYPAL_MODE === "LIVE";
     const isSandbox = process.env.PAYPAL_MODE === "sandbox" || process.env.PAYPAL_MODE === "SANDBOX" || process.env.PAYPAL_MODE === "test" || process.env.PAYPAL_MODE === "TEST";
     
-    // Default to sandbox/test if not specified
+    // default to test mode
     const useLive = isLive && !isSandbox;
 
     if (useLive) {
@@ -185,7 +185,7 @@ function getPayPalClient() {
             throw new Error("PayPal Sandbox credentials not configured. Please set PAYPAL_CLIENT_ID_TEST and PAYPAL_SECRET_TEST in .env file");
         }
         
-        // Verify credentials are different
+        // making sure theyre not the same
         if (clientId === secret) {
             throw new Error("PayPal Client ID and Secret cannot be the same. Please check your server/.env file.");
         }
@@ -205,7 +205,7 @@ export const createOrderPaypalController = async (request, response) => {
     try {
         const { userId, totalAmount, nprAmount } = request.query;
 
-        // Validate inputs
+        // checking if user id exists
         if (!userId) {
             return response.status(400).json({
                 error: true,
@@ -214,7 +214,7 @@ export const createOrderPaypalController = async (request, response) => {
             });
         }
 
-        // totalAmount is in USD (for PayPal), nprAmount is the original NPR amount
+         // converting to usd for paypal
         const usdAmount = totalAmount; // USD amount for PayPal
         const originalNprAmount = nprAmount || totalAmount; // Original NPR amount to store
 
@@ -234,10 +234,10 @@ export const createOrderPaypalController = async (request, response) => {
             intent: "CAPTURE",
             purchase_units: [{
                 amount: {
-                    currency_code: 'USD', // PayPal doesn't support NPR, must use USD
+                    currency_code: 'USD',
                     value: parseFloat(usdAmount).toFixed(2)
                 },
-                description: `Order payment (NPR ${originalNprAmount})` // Show original NPR amount in description
+                description: `Order payment (NPR ${originalNprAmount})`
             }]
         });
 
@@ -307,8 +307,7 @@ export const captureOrderPaypalController = async (request, response) => {
         const req = new paypal.orders.OrdersCaptureRequest(paymentId);
         req.requestBody({});
 
-        // Store the original NPR amount (not the converted USD amount)
-        // If nprAmount is provided, use it; otherwise use totalAmount (assuming it's already in NPR)
+        // save npr amount not usd
         const nprAmount = request.body.nprAmount || request.body.totalAmount;
 
         const orderInfo = {
@@ -329,7 +328,7 @@ export const captureOrderPaypalController = async (request, response) => {
         const recipients = [];
         recipients.push(user?.email);
 
-        // Send verification email
+        // sending email
         await sendEmailFun({
             sendTo: recipients,
             subject: "Order Confirmation",
@@ -799,10 +798,10 @@ export async function deleteOrder(request, response) {
 }
 
 
-// Temporary storage for eSewa orders (in production, use Redis or database)
+// storing esewa orders temporarily
 const esewaPendingOrders = new Map();
 
-// eSewa Payment Integration
+// esewa payment
 export const initiateEsewaPaymentController = async (request, response) => {
     try {
         const { userId, products, totalAmount, delivery_address, date } = request.body;
@@ -819,7 +818,7 @@ export const initiateEsewaPaymentController = async (request, response) => {
         const secretKey = process.env.ESEWA_SECRET_KEY;
         const environment = process.env.ESEWA_ENVIRONMENT || "test";
 
-        // Validate environment variables
+        // check env vars
         if (!merchantId || !secretKey) {
             return response.status(400).json({
                 error: true,

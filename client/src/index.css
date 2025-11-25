@@ -142,7 +142,7 @@ input[type=number]::-webkit-outer-spin-button {
 
 .productDetailsModal .MuiDialogContent-root{padding:0px !important;}
 
-.productsSlider .swiper,.blogSection .swiper{overflow: inherit !important;}
+.productsSlider .swiper{overflow: inherit !important;}
 
 .cartPanel .MuiPaper-root{width: 400px; overflow: hidden;}
 .addressPanel .MuiPaper-root{width: 500px; overflow: hidden;}

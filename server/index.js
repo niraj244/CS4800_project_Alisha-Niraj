@@ -15,7 +15,6 @@ import addressRouter from './route/address.route.js';
 import homeSlidesRouter from './route/homeSlides.route.js';
 import bannerV1Router from './route/bannerV1.route.js';
 import bannerList2Router from './route/bannerList2.route.js';
-import blogRouter from './route/blog.route.js';
 import orderRouter from './route/order.route.js';
 import logoRouter from './route/logo.route.js';
 import siteSettingsRouter from './route/siteSettings.route.js';
@@ -50,7 +49,6 @@ app.use("/api/address",addressRouter)
 app.use("/api/homeSlides",homeSlidesRouter)
 app.use("/api/bannerV1",bannerV1Router)
 app.use("/api/bannerList2",bannerList2Router)
-app.use("/api/blog",blogRouter)
 app.use("/api/order",orderRouter)
 app.use("/api/logo",logoRouter)
 app.use("/api/siteSettings",siteSettingsRouter)

@@ -8,7 +8,7 @@ const VITE_FIREBASE_APP_APP_ID = import.meta.env.VITE_FIREBASE_APP_APP_ID;
 import { initializeApp } from "firebase/app";
 
 
-// Your web app's Firebase configuration
+// firebase config
 const firebaseConfig = {
   apiKey: VITE_FIREBASE_APP_API_KEY,
   authDomain: VITE_FIREBASE_APP_AUTH_DOMAIN,
@@ -18,5 +18,5 @@ const firebaseConfig = {
   appId: VITE_FIREBASE_APP_APP_ID
 };
 
-// Initialize Firebase
+// init firebase
 export const firebaseApp = initializeApp(firebaseConfig);

@@ -21,7 +21,7 @@
     .scrollableBox .box .info *{white-space: break-spaces !important;}
 
     .scrollableBox .col{display: inline-block !important; vertical-align: top !important; margin-right: 12px !important; width: 200px !important;}
-    .productsSlider .swiper, .blogSection .swiper{overflow: hidden !important;}
+    .productsSlider .swiper{overflow: hidden !important;}
 
     .resBannersSlider{white-space: nowrap; overflow-x: scroll; overflow-y: hidden; display: block !important;}
 

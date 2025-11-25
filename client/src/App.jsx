@@ -25,7 +25,6 @@ import Address from "./Pages/MyAccount/address";
 import { OrderSuccess } from "./Pages/Orders/success";
 import { OrderFailed } from "./Pages/Orders/failed";
 import SearchPage from "./Pages/Search";
-import BlogDetail from "./Pages/Blog";
 import Compare from "./Pages/Compare";
 
 
@@ -114,7 +113,7 @@ function App() {
           alertBox("error", "Your session is closed please login again");
 
 
-          //window.location.href = "/login"
+          // maybe redirect to login later
 
           setIsLogin(false);
         }
@@ -218,7 +217,7 @@ function App() {
     })
   }
 
-  // Compare products functionality
+  // compare products 
   useEffect(() => {
     const savedCompare = localStorage.getItem('compareProducts');
     if (savedCompare) {
@@ -241,7 +240,7 @@ function App() {
   const addToCompare = (product) => {
     const maxCompareItems = 4; // Limit to 4 products
     
-    // Check if product is already in compare list
+    // check if already added
     const isAlreadyAdded = compareData.some(item => item._id === product._id);
     
     if (isAlreadyAdded) {
@@ -353,7 +352,6 @@ function App() {
             <Route path={"/order/failed"} exact={true} element={<OrderFailed />} />
             <Route path={"/address"} exact={true} element={<Address />} />
             <Route path={"/search"} exact={true} element={<SearchPage />} />
-            <Route path={"/blog/:id"} exact={true} element={<BlogDetail />} />
             <Route path={"/compare"} exact={true} element={<Compare />} />
           </Routes>
           <Footer />

@@ -12,7 +12,7 @@ cloudinary.config({
 });
 
 
-//image upload
+// uploading images
 var imagesArr = [];
 export async function uploadImages(request, response) {
     try {
@@ -54,7 +54,7 @@ export async function uploadImages(request, response) {
 
 
 
-//add banner
+// adding banner
 export async function addBanner(request, response) {
     try {
         let banner = new BannerV1Model({
@@ -99,7 +99,7 @@ export async function addBanner(request, response) {
 
 
 
-//get Categories
+// geting all banners
 export async function getBanners(request, response) {
     try {
         const banners = await BannerV1Model.find();
@@ -128,8 +128,7 @@ export async function getBanners(request, response) {
 }
 
 
-//get single category
-
+// gets one banner
 export async function getBanner(request, response) {
     try {
         const banner = await BannerV1Model.findById(request.params.id);
@@ -175,7 +174,7 @@ export async function deleteBanner(request, response) {
 
         if (imageName) {
             cloudinary.uploader.destroy(imageName, (error, result) => {
-                // console.log(error, result);
+                // dont need to log
             });
         }
 

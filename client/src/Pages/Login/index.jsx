@@ -126,10 +126,10 @@ const Login = () => {
     
         signInWithPopup(auth, googleProvider)
           .then((result) => {
-            // This gives you a Google Access Token. You can use it to access the Google API.
+            // google token stuff
             const credential = GoogleAuthProvider.credentialFromResult(result);
             const token = credential.accessToken;
-            // The signed-in user info.
+            // user data
             const user = result.user;
     
             const fields = {
@@ -162,15 +162,12 @@ const Login = () => {
             })
     
             console.log(user)
-            // IdP data available using getAdditionalUserInfo(result)
-            // ...
+            // user info from google
           }).catch((error) => {
-            // Handle Errors here.
+            // error handling
             const errorCode = error.code;
             const errorMessage = error.message;
-            // The email of the user's account used.
             const email = error.customData.email;
-            // The AuthCredential type that was used.
             const credential = GoogleAuthProvider.credentialFromError(error);
             // ...
           });

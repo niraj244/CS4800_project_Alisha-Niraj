@@ -17,7 +17,7 @@ export const postData = async (url, formData) => {
 
         if (response.ok) {
             const data = await response.json();
-            //console.log(data)
+            // not logging for now
             return data;
         } else {
             const errorData = await response.json();
