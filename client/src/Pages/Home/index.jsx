@@ -44,14 +44,7 @@ const Home = () => {
 
     window.scrollTo(0, 0);
 
-    // Fetch site settings for popular products subtitle
-    fetchDataFromApi("/api/siteSettings").then((res) => {
-      if (res?.error === false && res?.data?.popularProductsSubtitle) {
-        setPopularProductsSubtitle(res?.data?.popularProductsSubtitle);
-      }
-    }).catch(() => {
-      // Use default if API fails
-    });
+    // Popular products subtitle is now hardcoded (no API call needed)
 
     fetchDataFromApi("/api/homeSlides").then((res) => {
       setHomeSlidesData(res?.data)

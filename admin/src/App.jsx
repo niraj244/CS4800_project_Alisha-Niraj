@@ -29,7 +29,6 @@ import AddSize from "./Pages/Products/addSize";
 import BannerV1List from "./Pages/Banners/bannerV1List";
 import { BannerList2 } from "./Pages/Banners/bannerList2";
 import ManageLogo from "./Pages/ManageLogo";
-import SiteSettings from "./Pages/SiteSettings";
 import LoadingBar from "react-top-loading-bar";
 
 const MyContext = createContext();
@@ -466,31 +465,6 @@ function App() {
                 style={{ width: isSidebarOpen === false ? "100%" : '80%' }}
               >
                 <ManageLogo />
-              </div>
-            </div>
-          </section>
-        </>
-      ),
-    },
-    {
-      path: "/siteSettings",
-      exact: true,
-      element: (
-        <>
-          <section className="main">
-            <Header />
-            <div className="contentMain flex">
-              <div
-                className={`overflow-hidden sidebarWrapper ${isSidebarOpen === true ? windowWidth < 992 ? `w-[${sidebarWidth / 1.5}%]` : `w-[20%]` : "w-[0px] opacity-0 invisible"
-                  } transition-all`}
-              >
-                <Sidebar />
-              </div>
-              <div
-                className={`contentRight overflow-hidden py-4 px-5 ${isSidebarOpen === true && windowWidth < 992 && 'opacity-0'}  transition-all`}
-                style={{ width: isSidebarOpen === false ? "100%" : '80%' }}
-              >
-                <SiteSettings />
               </div>
             </div>
           </section>

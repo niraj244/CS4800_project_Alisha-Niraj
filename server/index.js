@@ -17,7 +17,6 @@ import bannerV1Router from './route/bannerV1.route.js';
 import bannerList2Router from './route/bannerList2.route.js';
 import orderRouter from './route/order.route.js';
 import logoRouter from './route/logo.route.js';
-import siteSettingsRouter from './route/siteSettings.route.js';
 
 const app = express();
 app.use(cors());
@@ -51,7 +50,6 @@ app.use("/api/bannerV1",bannerV1Router)
 app.use("/api/bannerList2",bannerList2Router)
 app.use("/api/order",orderRouter)
 app.use("/api/logo",logoRouter)
-app.use("/api/siteSettings",siteSettingsRouter)
 
 
 connectDB().then(() => {
