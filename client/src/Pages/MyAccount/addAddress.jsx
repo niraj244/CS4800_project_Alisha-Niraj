@@ -25,7 +25,7 @@ const AddAddress = () => {
         city: '',
         state: '',
         pincode: '',
-        country: '',
+        country: 'Nepal',
         mobile: '',
         userId: '',
         addressType: '',
@@ -151,7 +151,7 @@ const AddAddress = () => {
                         city: '',
                         state: '',
                         pincode: '',
-                        country: '',
+                        country: 'Nepal',
                         mobile: '',
                         userId: '',
                         addressType: '',
@@ -189,7 +189,7 @@ const AddAddress = () => {
                         city: '',
                         state: '',
                         pincode: '',
-                        country: '',
+                        country: 'Nepal',
                         mobile: '',
                         userId: '',
                         addressType: '',
@@ -288,7 +288,7 @@ const AddAddress = () => {
 
             <div className="col w-[100%] mb-4">
                 <PhoneInput
-                    defaultCountry="in"
+                    defaultCountry="np"
                     value={phone}
                     onChange={(phone) => {
                         setPhone(phone);
