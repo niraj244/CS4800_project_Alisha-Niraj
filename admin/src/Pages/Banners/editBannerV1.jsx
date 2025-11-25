@@ -131,18 +131,6 @@ export const EditBannerV1 = () => {
 
         console.log(formFields)
 
-        if (formFields.bannerTitle === "") {
-            context.alertBox("error", "Please enter bannerTitle");
-            setIsLoading(false);
-            return false
-        }
-
-        if (formFields.price === "") {
-            context.alertBox("error", "Please enter price");
-            setIsLoading(false);
-            return false
-        }
-
         if (previews?.length === 0) {
             context.alertBox("error", "Please select category image");
             setIsLoading(false);

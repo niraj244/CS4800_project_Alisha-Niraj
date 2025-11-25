@@ -58,12 +58,12 @@ export async function uploadImages(request, response) {
 export async function addBanner(request, response) {
     try {
         let banner = new BannerV1Model({
-            bannerTitle: request.body.bannerTitle,
+            bannerTitle: request.body.bannerTitle || '',
             images: imagesArr,
             catId: request.body.catId,
             subCatId: request.body.subCatId,
             thirdsubCatId: request.body.thirdsubCatId,
-            price: request.body.price,
+            price: request.body.price && request.body.price !== '' ? request.body.price : null,
             alignInfo:request.body.alignInfo
         });
 
@@ -204,12 +204,12 @@ export async function updatedBanner(request, response) {
     const banner = await BannerV1Model.findByIdAndUpdate(
         request.params.id,
         {
-            bannerTitle: request.body.bannerTitle,
-            images: imagesArr.length > 0 ? imagesArr[0] : request.body.images,
+            bannerTitle: request.body.bannerTitle || '',
+            images: imagesArr.length > 0 ? imagesArr : request.body.images,
             catId: request.body.catId,
             subCatId: request.body.subCatId,
             thirdsubCatId: request.body.thirdsubCatId,
-            price: request.body.price,
+            price: request.body.price && request.body.price !== '' ? request.body.price : null,
             alignInfo:request.body.alignInfo
         },
         { new: true }

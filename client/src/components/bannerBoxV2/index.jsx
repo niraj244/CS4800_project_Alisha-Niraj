@@ -17,11 +17,15 @@ const BannerBoxV2 = (props) => {
           } w-[70%] h-[100%] z-50 flex items-center justify-center flex-col gap-2 
          ${props.info === "left" ? '' : 'pl-16'}`}
       >
-        <h2 className="text-[14px] md:text-[18px] font-[600]">{props?.item?.bannerTitle}</h2>
+        {props?.item?.bannerTitle && props?.item?.bannerTitle !== '' && (
+          <h2 className="text-[14px] md:text-[18px] font-[600]">{props?.item?.bannerTitle}</h2>
+        )}
 
-        <span className="text-[20px] text-primary font-[600] w-full">
-          {formatPrice(props?.item?.price)}
-        </span>
+        {props?.item?.price && props?.item?.price !== '' && props?.item?.price !== null && (
+          <span className="text-[20px] text-primary font-[600] w-full">
+            {formatPrice(props?.item?.price)}
+          </span>
+        )}
 
         <div className="w-full">
           {

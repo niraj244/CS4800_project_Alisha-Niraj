@@ -4,7 +4,7 @@ const bannerV1Schema = new mongoose.Schema({
     bannerTitle : {
         type : String,
         default : '',
-        required:true
+        required:false
     },
     images:[
         {
@@ -25,8 +25,8 @@ const bannerV1Schema = new mongoose.Schema({
     },
     price : {
         type : Number,
-        default : '',
-        required:true
+        default : null,
+        required:false
     },
     alignInfo : {
         type : String,
