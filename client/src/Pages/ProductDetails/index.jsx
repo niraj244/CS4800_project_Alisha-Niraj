@@ -111,8 +111,8 @@ export const ProductDetails = () => {
 
 
             <>
-              <div className="container flex gap-8 flex-col lg:flex-row items-start lg:items-center">
-                <div className="productZoomContainer w-full lg:w-[40%]">
+              <div className="container flex gap-8 flex-col lg:flex-row items-start">
+                <div className="productZoomContainer w-full lg:w-[40%] lg:sticky lg:top-5">
                   <ProductZoom images={productData?.images} />
                 </div>
 
@@ -143,7 +143,7 @@ export const ProductDetails = () => {
                 </div>
 
                 {activeTab === 0 && (
-                  <div className="shadow-md w-full py-5 px-8 rounded-md text-[14px]">
+                  <div className="shadow-md w-full py-5 px-8 rounded-md text-[14px] whitespace-pre-line">
                     {
                       productData?.description
                     }

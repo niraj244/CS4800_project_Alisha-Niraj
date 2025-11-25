@@ -328,7 +328,7 @@ const ProductItem = (props) => {
           </Link>
         </h3>
 
-        <p className="text-[14px] mb-3">
+        <p className="text-[14px] mb-3 whitespace-pre-line">
          {props?.item?.description}
         </p>
 
