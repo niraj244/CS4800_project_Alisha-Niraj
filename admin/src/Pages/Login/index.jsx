@@ -114,7 +114,14 @@ const Login = () => {
 
         context.setIsLogin(true);
 
-        history("/")
+        // If email needs verification, redirect to verification page
+        if (res?.needsVerification === true) {
+          localStorage.setItem("userEmail", formFields.email);
+          localStorage.removeItem("actionType"); // Remove forgot-password action type if exists
+          history("/verify-account")
+        } else {
+          history("/")
+        }
       } else {
         context.alertBox("error", res?.message);
         setIsLoading(false);

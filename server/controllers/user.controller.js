@@ -33,7 +33,8 @@ export async function registerUserController(request, response) {
 
         user = await UserModel.findOne({ email: email });
 
-        if (user) {
+        // If user exists and email is verified, return error
+        if (user && user.verify_email === true) {
             return response.json({
                 message: "User already Registered with this email",
                 error: true,
@@ -41,8 +42,42 @@ export async function registerUserController(request, response) {
             })
         }
 
-        const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
+        // If user exists but email is not verified, update OTP and resend email
+        if (user && user.verify_email !== true) {
+            const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
+            const salt = await bcryptjs.genSalt(10);
+            const hashPassword = await bcryptjs.hash(password, salt);
 
+            user.name = name;
+            user.password = hashPassword;
+            user.otp = verifyCode;
+            user.otpExpires = Date.now() + 600000;
+            await user.save();
+
+            // Send verification email
+            await sendEmailFun({
+                sendTo: email,
+                subject: "Verify email from Ecommerce App",
+                text: "",
+                html: VerificationEmail(name, verifyCode)
+            })
+
+            // Create a JWT token for verification purposes
+            const token = jwt.sign(
+                { email: user.email, id: user._id },
+                process.env.JSON_WEB_TOKEN_SECRET_KEY
+            );
+
+            return response.status(200).json({
+                success: true,
+                error: false,
+                message: "Verification email sent. Please verify your email.",
+                token: token,
+            });
+        }
+
+        // New user registration
+        const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
 
         const salt = await bcryptjs.genSalt(10);
         const hashPassword = await bcryptjs.hash(password, salt);
@@ -115,6 +150,66 @@ export async function verifyEmailController(request, response) {
         } else {
             return response.status(400).json({ error: true, success: false, message: "OTP expired" });
         }
+
+    } catch (error) {
+        return response.status(500).json({
+            message: error.message || error,
+            error: true,
+            success: false
+        })
+    }
+}
+
+// Resend OTP for email verification
+export async function resendOtpController(request, response) {
+    try {
+        const { email } = request.body;
+
+        if (!email) {
+            return response.status(400).json({
+                message: "Email is required",
+                error: true,
+                success: false
+            })
+        }
+
+        const user = await UserModel.findOne({ email: email });
+
+        if (!user) {
+            return response.status(400).json({
+                message: "User not found",
+                error: true,
+                success: false
+            })
+        }
+
+        if (user.verify_email === true) {
+            return response.status(400).json({
+                message: "Email is already verified",
+                error: true,
+                success: false
+            })
+        }
+
+        // Generate new OTP
+        const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
+        user.otp = verifyCode;
+        user.otpExpires = Date.now() + 600000;
+        await user.save();
+
+        // Send verification email
+        await sendEmailFun({
+            sendTo: email,
+            subject: "Verify email from Ecommerce App",
+            text: "",
+            html: VerificationEmail(user.name, verifyCode)
+        })
+
+        return response.status(200).json({
+            message: "OTP sent successfully to your email",
+            error: false,
+            success: true
+        })
 
     } catch (error) {
         return response.status(500).json({
@@ -236,14 +331,6 @@ export async function loginUserController(request, response) {
             })
         }
 
-        if (user.verify_email !== true) {
-            return response.status(400).json({
-                message: "Your Email is not verify yet please verify your email first",
-                error: true,
-                success: false
-            })
-        }
-
         const checkPassword = await bcryptjs.compare(password, user.password);
 
         if (!checkPassword) {
@@ -254,6 +341,47 @@ export async function loginUserController(request, response) {
             })
         }
 
+        // If email is not verified, generate new OTP and send it
+        if (user.verify_email !== true) {
+            const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
+            user.otp = verifyCode;
+            user.otpExpires = Date.now() + 600000;
+            await user.save();
+
+            // Send verification email
+            await sendEmailFun({
+                sendTo: email,
+                subject: "Verify email from Ecommerce App",
+                text: "",
+                html: VerificationEmail(user.name, verifyCode)
+            })
+
+            const accesstoken = await generatedAccessToken(user._id);
+            const refreshToken = await genertedRefreshToken(user._id);
+
+            const updateUser = await UserModel.findByIdAndUpdate(user?._id, {
+                last_login_date: new Date()
+            })
+
+            const cookiesOption = {
+                httpOnly: true,
+                secure: true,
+                sameSite: "None"
+            }
+            response.cookie('accessToken', accesstoken, cookiesOption)
+            response.cookie('refreshToken', refreshToken, cookiesOption)
+
+            return response.json({
+                message: "Login successfully. Please verify your email.",
+                error: false,
+                success: true,
+                needsVerification: true,
+                data: {
+                    accesstoken,
+                    refreshToken
+                }
+            })
+        }
 
         const accesstoken = await generatedAccessToken(user._id);
         const refreshToken = await genertedRefreshToken(user._id);

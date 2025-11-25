@@ -15,6 +15,7 @@ const VerifyAccount = () => {
 
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const context = useContext(MyContext);
   const history = useNavigate();
@@ -29,6 +30,23 @@ const VerifyAccount = () => {
     setOtp(value);
   };
 
+  const resendOtp = () => {
+    const email = localStorage.getItem("userEmail");
+    if (!email) {
+      context.alertBox("error", "Email not found");
+      return;
+    }
+
+    setIsResending(true);
+    postData("/api/user/resend-otp", { email }).then((res) => {
+      if (res?.error === false) {
+        context.alertBox("success", res?.message);
+      } else {
+        context.alertBox("error", res?.message);
+      }
+      setIsResending(false);
+    })
+  }
 
   const verityOTP = (e) => {
     e.preventDefault();
@@ -37,6 +55,8 @@ const VerifyAccount = () => {
     if (otp !== "") {
       setIsLoading(true)
       const actionType = localStorage.getItem("actionType");
+      const token = localStorage.getItem('accessToken');
+
       if (actionType !== "forgot-password") {
 
         postData("/api/user/verifyEmail", {
@@ -47,7 +67,12 @@ const VerifyAccount = () => {
             context.alertBox("success", res?.message);
             localStorage.removeItem("userEmail")
             setIsLoading(false)
-            history("/login")
+            // If user is already logged in, redirect to home, otherwise to login
+            if (token && token !== "" && token !== null) {
+              history("/")
+            } else {
+              history("/login")
+            }
           } else {
             context.alertBox("error", res?.message);
             setIsLoading(false)
@@ -62,6 +87,7 @@ const VerifyAccount = () => {
         }).then((res) => {
           if (res?.error === false) {
             context.alertBox("success", res?.message);
+            setIsLoading(false);
             history("/change-password")
           } else {
             context.alertBox("error", res?.message);
@@ -128,13 +154,24 @@ const VerifyAccount = () => {
           <br />
 
           <div className="w-[100%] px-3 sm:w-[300px] sm:px-0 m-auto">
-            <Button type="submit" className="btn-blue w-full">
+            <Button type="submit" disabled={isLoading} className="btn-blue w-full">
 
               {
                 isLoading === true ? <CircularProgress color="inherit" />
                   :
                   'Verify OTP'
               }
+            </Button>
+          </div>
+
+          <div className="w-[100%] px-3 sm:w-[300px] sm:px-0 m-auto mt-3">
+            <Button 
+              type="button" 
+              onClick={resendOtp} 
+              disabled={isResending}
+              className="text-primary text-[14px] hover:underline w-full"
+            >
+              {isResending ? "Sending..." : "Resend OTP"}
             </Button>
           </div>
 
