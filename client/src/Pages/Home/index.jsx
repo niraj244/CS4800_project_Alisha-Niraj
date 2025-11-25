@@ -35,7 +35,6 @@ const Home = () => {
   const [bannerV1Data, setBannerV1Data] = useState([]);
   const [bannerList2Data, setBannerList2Data] = useState([]);
   const [randomCatProducts, setRandomCatProducts] = useState([]);
-  const [popularProductsSubtitle, setPopularProductsSubtitle] = useState("Do not miss the current offers until the end of March.");
 
   const context = useContext(MyContext);
 
@@ -44,7 +43,6 @@ const Home = () => {
 
     window.scrollTo(0, 0);
 
-    // Popular products subtitle is now hardcoded (no API call needed)
 
     fetchDataFromApi("/api/homeSlides").then((res) => {
       setHomeSlidesData(res?.data)
@@ -164,7 +162,7 @@ const Home = () => {
             <div className="leftSec w-full lg:w-[40%]">
               <h2 className="text-[14px] sm:text-[14px] md:text-[16px] lg:text-[20px] font-[600]">Popular Products</h2>
               <p className="text-[12px] sm:text-[14px] md:text-[13px] lg:text-[14px] font-[400] mt-0 mb-0">
-                {popularProductsSubtitle}
+                Do not miss the current offers until the end of December.
               </p>
             </div>
 

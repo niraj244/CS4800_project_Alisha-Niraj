@@ -151,7 +151,7 @@ const Home = () => {
             <div className="leftSec">
               <h2 className="text-[20px] font-[600]">Popular Products</h2>
               <p className="text-[14px] font-[400] mt-0 mb-0">
-                Do not miss the current offers until the end of March.
+                Do not miss the current offers until the end of December.
               </p>
             </div>
 
