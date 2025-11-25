@@ -15,6 +15,7 @@ import CategoryList from "./Pages/Categegory";
 import SubCategoryList from "./Pages/Categegory/subCatList";
 import Users from "./Pages/Users";
 import Orders from "./Pages/Orders";
+import AdminApproval from "./Pages/AdminApproval";
 import ForgotPassword from "./Pages/ForgotPassword";
 import VerifyAccount from "./Pages/VerifyAccount";
 import ChangePassword from "./Pages/ChangePassword";
@@ -28,7 +29,6 @@ import AddWeight from "./Pages/Products/addWeight";
 import AddSize from "./Pages/Products/addSize";
 import BannerV1List from "./Pages/Banners/bannerV1List";
 import { BannerList2 } from "./Pages/Banners/bannerList2";
-import { BlogList } from "./Pages/Blog";
 import ManageLogo from "./Pages/ManageLogo";
 import SiteSettings from "./Pages/SiteSettings";
 import LoadingBar from "react-top-loading-bar";
@@ -449,31 +449,6 @@ function App() {
       ),
     },
     {
-      path: "/blog/List",
-      exact: true,
-      element: (
-        <>
-          <section className="main">
-            <Header />
-            <div className="contentMain flex">
-              <div
-                className={`overflow-hidden sidebarWrapper ${isSidebarOpen === true ? windowWidth < 992 ? `w-[${sidebarWidth / 1.5}%]` : `w-[20%]` : "w-[0px] opacity-0 invisible"
-                  } transition-all`}
-              >
-                <Sidebar />
-              </div>
-              <div
-                className={`contentRight overflow-hidden py-4 px-5 ${isSidebarOpen === true && windowWidth < 992 && 'opacity-0'}  transition-all`}
-                style={{ width: isSidebarOpen === false ? "100%" : '80%' }}
-              >
-                <BlogList />
-              </div>
-            </div>
-          </section>
-        </>
-      ),
-    },
-    {
       path: "/logo/manage",
       exact: true,
       element: (
@@ -523,6 +498,31 @@ function App() {
         </>
       ),
     },
+    {
+      path: "/admin-approval",
+      exact: true,
+      element: (
+        <>
+          <section className="main">
+            <Header />
+            <div className="contentMain flex">
+              <div
+                className={`overflow-hidden sidebarWrapper ${isSidebarOpen === true ? windowWidth < 992 ? `w-[${sidebarWidth / 1.5}%]` : `w-[20%]` : "w-[0px] opacity-0 invisible"
+                  } transition-all`}
+              >
+                <Sidebar />
+              </div>
+              <div
+                className={`contentRight overflow-hidden py-4 px-5 ${isSidebarOpen === true && windowWidth < 992 && 'opacity-0'}  transition-all`}
+                style={{ width: isSidebarOpen === false ? "100%" : '80%' }}
+              >
+                <AdminApproval />
+              </div>
+            </div>
+          </section>
+        </>
+      ),
+    },
   ]);
 
   const alertBox = (type, msg) => {
@@ -543,15 +543,21 @@ function App() {
       setIsLogin(true);
 
       fetchDataFromApi(`/api/user/user-details`).then((res) => {
+        if (res?.error === false && res?.data) {
         setUserData(res.data);
-        if (res?.response?.data?.message === "You have not login") {
+        } else if (res?.error === true || res?.message === "You have not login") {
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
           setIsLogin(false);
-          alertBox("error", "Your session is closed please login again")
-
-          //window.location.href = "/login"
+          alertBox("error", res?.message || "Your session is closed please login again")
+        } else {
+          console.error('Failed to fetch user details:', res);
         }
+      }).catch((error) => {
+        console.error('Error fetching user details:', error);
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        setIsLogin(false);
       })
 
     } else {

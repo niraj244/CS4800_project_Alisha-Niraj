@@ -25,7 +25,6 @@ import Address from "./Pages/MyAccount/address";
 import { OrderSuccess } from "./Pages/Orders/success";
 import { OrderFailed } from "./Pages/Orders/failed";
 import SearchPage from "./Pages/Search";
-import BlogDetail from "./Pages/Blog";
 import Compare from "./Pages/Compare";
 
 
@@ -353,7 +352,6 @@ function App() {
             <Route path={"/order/failed"} exact={true} element={<OrderFailed />} />
             <Route path={"/address"} exact={true} element={<Address />} />
             <Route path={"/search"} exact={true} element={<SearchPage />} />
-            <Route path={"/blog/:id"} exact={true} element={<BlogDetail />} />
             <Route path={"/compare"} exact={true} element={<Compare />} />
           </Routes>
           <Footer />

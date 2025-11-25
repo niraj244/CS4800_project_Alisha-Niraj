@@ -236,7 +236,7 @@ const Dashboard = () => {
                   Order Id
                 </th>
                 <th scope="col" className="px-6 py-3 whitespace-nowrap">
-                  Paymant Id
+                  Payment Id
                 </th>
                 <th scope="col" className="px-6 py-3 whitespace-nowrap">
                   Name

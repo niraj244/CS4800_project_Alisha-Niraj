@@ -1,12 +1,9 @@
 import React, { useContext, useEffect, useState } from "react";
 import Button from "@mui/material/Button";
-import Badge from "@mui/material/Badge";
-import { styled } from "@mui/material/styles";
 import IconButton from "@mui/material/IconButton";
 
 import { RiMenu2Line } from "react-icons/ri";
 
-import { FaRegBell } from "react-icons/fa";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Divider from "@mui/material/Divider";
@@ -35,22 +32,11 @@ import { AddBannerV1 } from "../../Pages/Banners/addBannerV1";
 import { EditBannerV1 } from "../../Pages/Banners/editBannerV1";
 import { BannerList2_AddBanner } from "../../Pages/Banners/bannerList2_AddBanner";
 import { BannerList2_Edit_Banner } from "../../Pages/Banners/bannerList2_Edit_Banner";
-import AddBlog from "../../Pages/Blog/addBlog";
-import EditBlog from "../../Pages/Blog/editBlog";
 import EditHomeSlide from "../../Pages/HomeSliderBanners/editHomeSlide";
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
-
-const StyledBadge = styled(Badge)(({ theme }) => ({
-  "& .MuiBadge-badge": {
-    right: -3,
-    top: 13,
-    border: `2px solid ${theme.palette.background.paper}`,
-    padding: "0 4px",
-  },
-}));
 
 
 const Header = () => {
@@ -93,13 +79,26 @@ const Header = () => {
   const logout = () => {
     setAnchorMyAcc(null);
 
-    fetchDataFromApi(`/api/user/logout?token=${localStorage.getItem('accessToken')}`, { withCredentials: true }).then((res) => {
+    fetchDataFromApi(`/api/user/logout`).then((res) => {
       if (res?.error === false) {
         context.setIsLogin(false);
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         history("/login")
+      } else {
+        // Even if API call fails, clear local storage and redirect
+        context.setIsLogin(false);
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        history("/login")
       }
+    }).catch((error) => {
+      console.error('Logout error:', error);
+      // Clear local storage and redirect even on error
+      context.setIsLogin(false);
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      history("/login")
     })
   }
 
@@ -138,11 +137,15 @@ const Header = () => {
         </div>
 
         <div className="part2  flex items-center justify-end gap-5">
-          <IconButton aria-label="cart">
-            <StyledBadge badgeContent={4} color="secondary">
-              <FaRegBell />
-            </StyledBadge>
-          </IconButton>
+          <Link 
+            to={context?.userData?.role === "ADMIN" ? "/admin-approval" : "/siteSettings"}
+          >
+            <Button 
+              className="btn-blue btn-sm !capitalize !rounded-full"
+            >
+              {context?.userData?.role === "ADMIN" ? "Admin" : "Not Admin"}
+            </Button>
+          </Link>
 
           {context.isLogin === true ? (
             <div className="relative">
@@ -349,13 +352,6 @@ const Header = () => {
         }
 
 
-        {
-          context?.isOpenFullScreenPanel?.model === "Add Blog" && <AddBlog />
-        }
-
-        {
-          context?.isOpenFullScreenPanel?.model === "Edit Blog" && <EditBlog />
-        }
 
 
       </Dialog>

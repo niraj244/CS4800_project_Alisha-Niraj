@@ -69,6 +69,20 @@ const userSchema = mongoose.Schema({
     signUpWithGoogle:{
         type:Boolean,
         default:false
+    },
+    adminRequestStatus: {
+        type: String,
+        enum: ['none', 'pending', 'approved', 'rejected'],
+        default: 'none'
+    },
+    requestedAdminAt: {
+        type: Date,
+        default: null
+    },
+    approvedBy: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+        default: null
     }
 },
     { timestamps: true }

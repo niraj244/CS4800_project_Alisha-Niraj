@@ -1,5 +1,23 @@
 import axios from "axios";
-const apiUrl = import.meta.env.VITE_API_URL;
+
+// Auto-detect local vs production environment
+const getApiUrl = () => {
+  // If VITE_API_URL is explicitly set, use it (highest priority)
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // If running on localhost, use local backend server
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return 'http://localhost:8000';
+  }
+  
+  // Otherwise, use production Render URL
+  return 'https://e-commerce-website-backend-wy5z.onrender.com';
+};
+
+const apiUrl = getApiUrl();
+console.log('Admin API URL:', apiUrl);
 
 export const postData = async (url, formData) => {
     try {
@@ -7,17 +25,16 @@ export const postData = async (url, formData) => {
         const response = await fetch(apiUrl + url, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`, // Include your API key in the Authorization header
-                'Content-Type': 'application/json', // Adjust the content type as needed
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                'Content-Type': 'application/json',
               },
-
+            credentials: 'include',
             body: JSON.stringify(formData)
         });
 
 
         if (response.ok) {
             const data = await response.json();
-            //console.log(data)
             return data;
         } else {
             const errorData = await response.json();
@@ -26,6 +43,7 @@ export const postData = async (url, formData) => {
 
     } catch (error) {
         console.error('Error:', error);
+        return { error: true, message: error.message };
     }
 
 }
@@ -36,17 +54,20 @@ export const fetchDataFromApi = async (url) => {
     try {
         const params={
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`, // Include your API key in the Authorization header
-                'Content-Type': 'application/json', // Adjust the content type as needed
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                'Content-Type': 'application/json',
               },
-        
+            withCredentials: true
         } 
 
         const { data } = await axios.get(apiUrl + url,params)
         return data;
     } catch (error) {
-        console.log(error);
-        return error;
+        console.error('API Error:', error.response?.data || error.message);
+        if (error.response) {
+            return error.response.data;
+        }
+        return { error: true, message: error.message };
     }
 }
 
@@ -54,10 +75,10 @@ export const fetchDataFromApi = async (url) => {
 export const uploadImage = async (url, updatedData ) => {
     const params={
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`, // Include your API key in the Authorization header
-            'Content-Type': 'multipart/form-data', // Adjust the content type as needed
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            'Content-Type': 'multipart/form-data',
           },
-    
+        withCredentials: true
     } 
 
     var response;
@@ -73,10 +94,10 @@ export const uploadImage = async (url, updatedData ) => {
 export const uploadImages = async (url, formData ) => {
     const params={
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`, // Include your API key in the Authorization header
-            'Content-Type': 'multipart/form-data', // Adjust the content type as needed
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            'Content-Type': 'multipart/form-data',
           },
-    
+        withCredentials: true
     } 
 
     var response;
@@ -93,10 +114,10 @@ export const uploadImages = async (url, formData ) => {
 export const editData = async (url, updatedData ) => {
     const params={
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`, // Include your API key in the Authorization header
-            'Content-Type': 'application/json', // Adjust the content type as needed
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            'Content-Type': 'application/json',
           },
-    
+        withCredentials: true
     } 
 
     var response;

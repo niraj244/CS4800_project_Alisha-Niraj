@@ -15,7 +15,6 @@ import "swiper/css/navigation";
 import 'swiper/css/free-mode';
 
 import { Navigation, FreeMode } from "swiper/modules";
-import BlogItem from "../../components/BlogItem";
 import HomeBannerV2 from "../../components/HomeSliderV2";
 import BannerBoxV2 from "../../components/bannerBoxV2";
 import { fetchDataFromApi } from "../../utils/api";
@@ -35,7 +34,6 @@ const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [bannerV1Data, setBannerV1Data] = useState([]);
   const [bannerList2Data, setBannerList2Data] = useState([]);
-  const [blogData, setBlogData] = useState([]);
   const [randomCatProducts, setRandomCatProducts] = useState([]);
   const [popularProductsSubtitle, setPopularProductsSubtitle] = useState("Do not miss the current offers until the end of March.");
 
@@ -79,9 +77,6 @@ const Home = () => {
       setBannerList2Data(res?.data);
     });
 
-    fetchDataFromApi("/api/blog").then((res) => {
-      setBlogData(res?.blogs);
-    });
   }, [])
 
 
@@ -355,57 +350,6 @@ const Home = () => {
       }
 
 
-      {
-        blogData?.length !== 0 &&
-        <section className="py-5 pb-8 pt-0 bg-white blogSection">
-          <div className="container">
-            <h2 className="text-[20px] font-[600] mb-6 lg:mb-8">From The Blog</h2>
-            <Swiper
-              slidesPerView={4}
-              spaceBetween={30}
-              navigation={context?.windowWidth < 992 ? false : true}
-              modules={[Navigation, FreeMode]}
-              freeMode={true}
-              breakpoints={{
-                250: {
-                  slidesPerView: 1,
-                  spaceBetween: 10,
-                },
-                330: {
-                  slidesPerView: 1,
-                  spaceBetween: 10,
-                },
-                500: {
-                  slidesPerView: 2,
-                  spaceBetween: 20,
-                },
-                700: {
-                  slidesPerView: 3,
-                  spaceBetween: 20,
-                },
-                1100: {
-                  slidesPerView: 4,
-                  spaceBetween: 30,
-                },
-              }}
-              className="blogSlider"
-            >
-              {
-                blogData?.slice()?.reverse()?.map((item, index) => {
-                  return (
-                    <SwiperSlide key={index}>
-                      <BlogItem item={item} />
-                    </SwiperSlide>
-                  )
-                })
-              }
-
-
-
-            </Swiper>
-          </div>
-        </section>
-      }
 
 
 

@@ -21,7 +21,37 @@ import logoRouter from './route/logo.route.js';
 import siteSettingsRouter from './route/siteSettings.route.js';
 
 const app = express();
-app.use(cors());
+
+// CORS configuration to allow requests from Vercel frontend and localhost
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        const allowedOrigins = [
+            "https://cs-4800-project-alisha-niraj.vercel.app",
+            "https://vibefitadmin.vercel.app",
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "http://localhost:5174"
+        ];
+        
+        // Check if origin is a Vercel preview URL (contains vercel.app)
+        if (origin.includes('vercel.app')) {
+            return callback(null, true);
+        }
+        
+        // Check if origin is in allowed list
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: "GET,POST,PUT,DELETE,OPTIONS",
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.options('*', cors())
 
 

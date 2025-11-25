@@ -11,8 +11,19 @@ import { postData } from "../../utils/api";
 
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { firebaseApp } from "../../firebase";
-const auth = getAuth(firebaseApp);
-const googleProvider = new GoogleAuthProvider();
+
+// Initialize auth only if Firebase app is available
+let auth = null;
+let googleProvider = null;
+
+if (firebaseApp) {
+  try {
+    auth = getAuth(firebaseApp);
+    googleProvider = new GoogleAuthProvider();
+  } catch (error) {
+    console.error("Error initializing Firebase Auth:", error);
+  }
+}
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -122,60 +133,92 @@ const Login = () => {
 
 
 
-      const authWithGoogle = () => {
+      const authWithGoogle = async (e) => {
+        // Prevent form submission if called from button click
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        
+        try {
+          // Check if Firebase is properly initialized
+          if (!firebaseApp) {
+            console.error("Firebase app is not initialized. Check Firebase configuration.");
+            context.alertBox("error", "Firebase is not properly configured. Please check your environment variables.");
+            return;
+          }
+          
+          if (!auth || !googleProvider) {
+            console.error("Firebase Auth is not initialized. Auth:", auth, "Provider:", googleProvider);
+            context.alertBox("error", "Firebase authentication is not properly configured. Please check your Firebase settings.");
+            return;
+          }
+          
+          setIsLoading(true);
+          
+          const result = await signInWithPopup(auth, googleProvider);
+          
+          // This gives you a Google Access Token. You can use it to access the Google API.
+          const credential = GoogleAuthProvider.credentialFromResult(result);
+          const token = credential.accessToken;
+          // The signed-in user info.
+          const user = result.user;
     
-        signInWithPopup(auth, googleProvider)
-          .then((result) => {
-            // This gives you a Google Access Token. You can use it to access the Google API.
-            const credential = GoogleAuthProvider.credentialFromResult(result);
-            const token = credential.accessToken;
-            // The signed-in user info.
-            const user = result.user;
+          const fields = {
+            name: user.displayName || user.providerData[0]?.displayName || "User",
+            email: user.email || user.providerData[0]?.email,
+            password: null,
+            avatar: user.photoURL || user.providerData[0]?.photoURL || "",
+            mobile: user.phoneNumber || user.providerData[0]?.phoneNumber || "",
+            role: "USER"
+          };
     
-            const fields = {
-              name: user.providerData[0].displayName,
-              email: user.providerData[0].email,
-              password: null,
-              avatar: user.providerData[0].photoURL,
-              mobile: user.providerData[0].phoneNumber,
-              role: "USER"
-            };
+          if (!fields.email) {
+            setIsLoading(false);
+            context.alertBox("error", "Failed to get email from Google account");
+            return;
+          }
     
+          const res = await postData("/api/user/authWithGoogle", fields);
     
-            postData("/api/user/authWithGoogle", fields).then((res) => {
+          if (res?.error !== true) {
+            setIsLoading(false);
+            context.alertBox("success", res?.message || "Login successful");
+            localStorage.setItem("userEmail", fields.email);
+            localStorage.setItem("accessToken", res?.data?.accesstoken);
+            localStorage.setItem("refreshToken", res?.data?.refreshToken);
     
-              if (res?.error !== true) {
-                setIsLoading(false);
-                context.alertBox("success", res?.message);
-                localStorage.setItem("userEmail", fields.email)
-                localStorage.setItem("accessToken", res?.data?.accesstoken);
-                localStorage.setItem("refreshToken", res?.data?.refreshToken);
+            context.setIsLogin(true);
     
-                context.setIsLogin(true);
-    
-                history("/")
-              } else {
-                context.alertBox("error", res?.message);
-                setIsLoading(false);
-              }
-    
-            })
-    
-            console.log(user)
-            // IdP data available using getAdditionalUserInfo(result)
-            // ...
-          }).catch((error) => {
-            // Handle Errors here.
-            const errorCode = error.code;
-            const errorMessage = error.message;
-            // The email of the user's account used.
-            const email = error.customData.email;
-            // The AuthCredential type that was used.
-            const credential = GoogleAuthProvider.credentialFromError(error);
-            // ...
-          });
-    
-    
+            history("/");
+          } else {
+            setIsLoading(false);
+            context.alertBox("error", res?.message || "Login failed. Please try again.");
+          }
+        } catch (error) {
+          // Handle Errors here.
+          setIsLoading(false);
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          
+          console.error("Google login error - Code:", errorCode, "Message:", errorMessage, "Full error:", error);
+          
+          // Show user-friendly error messages
+          if (errorCode === "auth/popup-closed-by-user") {
+            context.alertBox("error", "Login cancelled. Please try again.");
+          } else if (errorCode === "auth/popup-blocked") {
+            context.alertBox("error", "Popup blocked. Please allow popups for this site.");
+          } else if (errorCode === "auth/network-request-failed") {
+            context.alertBox("error", "Network error. Please check your connection.");
+          } else if (errorCode === "auth/unauthorized-domain") {
+            context.alertBox("error", "This domain is not authorized for Google login. Please contact support or add this domain to Firebase authorized domains.");
+            console.error("Domain authorization error. Make sure your Vercel domain is added to Firebase Console → Authentication → Settings → Authorized domains");
+          } else if (errorCode === "auth/operation-not-allowed") {
+            context.alertBox("error", "Google sign-in is not enabled. Please contact support.");
+          } else {
+            context.alertBox("error", errorMessage || "Failed to login with Google. Please try again.");
+          }
+        }
       }
     
 
@@ -243,9 +286,23 @@ const Login = () => {
 
             <p className="text-center font-[500]">Or continue with social account</p>
 
-            <Button className="flex gap-3 w-full !bg-[#f1f1f1] btn-lg !text-black"
-            onClick={authWithGoogle}>
-            <FcGoogle className="text-[20px]"/> Login with Google</Button>
+            <Button 
+              type="button"
+              className="flex gap-3 w-full !bg-[#f1f1f1] btn-lg !text-black"
+              onClick={authWithGoogle}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <CircularProgress size={20} color="inherit" />
+                  Logging in...
+                </>
+              ) : (
+                <>
+                  <FcGoogle className="text-[20px]"/> Login with Google
+                </>
+              )}
+            </Button>
 
           </form>
         </div>
