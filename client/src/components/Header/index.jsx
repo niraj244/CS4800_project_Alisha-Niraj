@@ -176,9 +176,20 @@ const Header = () => {
                           className="!text-[#000] myAccountWrap flex items-center gap-3 cursor-pointer"
                           onClick={handleClick}
                         >
-                          <Button className="!w-[40px] !h-[40px] !min-w-[40px] !rounded-full !bg-gray-200">
-                            <FaRegUser className="text-[17px] text-[rgba(0,0,0,0.7)]" />
-                          </Button>
+                          <div className="rounded-full w-[40px] h-[40px] overflow-hidden cursor-pointer">
+                            {
+                              context?.userData?.avatar !== "" && context?.userData?.avatar !== null && context?.userData?.avatar !== undefined ?
+                                <img
+                                  src={context?.userData?.avatar}
+                                  className="w-full h-full object-cover"
+                                />
+                                :
+                                <img
+                                  src="/user.jpg"
+                                  className="w-full h-full object-cover"
+                                />
+                            }
+                          </div>
 
                           {
                             context?.windowWidth > 992 &&
