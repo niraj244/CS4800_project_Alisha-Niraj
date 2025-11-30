@@ -71,7 +71,7 @@ const ChangePassword = () => {
     }
 
 
-    postData(`/api/user/reset-password`, formFields).then((res) => {
+    postData(`/api/user/forgot-password/change-password`, formFields).then((res) => {
       console.log(res)
       if (res?.error === false) {
         localStorage.removeItem("userEmail")
@@ -82,6 +82,7 @@ const ChangePassword = () => {
       }
       else {
         context.alertBox("error", res?.message);
+        setIsLoading(false);
       }
     })
 
