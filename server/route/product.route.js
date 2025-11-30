@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import auth from '../middlewares/auth.js';
 import upload from '../middlewares/multer.js';
-import {createProduct, createProductRAMS, deleteMultipleProduct, deleteProduct, deleteProductRAMS, getAllFeaturedProducts, getAllProducts, getAllProductsByCatId, getAllProductsByCatName, getAllProductsByPrice, getAllProductsByRating, getAllProductsBySubCatId, getAllProductsBySubCatName, getAllProductsByThirdLavelCatId, getProduct, getProductRams, getProductsCount, updateProduct, updateProductRam, uploadImages, getProductRamsById, createProductWEIGHT, deleteProductWEIGHT, updateProductWeight, getProductWeight, getProductWeightById, createProductSize, deleteProductSize, updateProductSize, getProductSize, getProductSizeById, uploadBannerImages, getAllProductsBanners, filters, sortBy, searchProductController, cleanupInvalidSizes} from '../controllers/product.controller.js';
+import {createProduct, deleteMultipleProduct, deleteProduct, getAllFeaturedProducts, getAllProducts, getAllProductsByCatId, getAllProductsByCatName, getAllProductsByPrice, getAllProductsByRating, getAllProductsBySubCatId, getAllProductsBySubCatName, getAllProductsByThirdLavelCatId, getProduct, getProductsCount, updateProduct, uploadImages, createProductSize, deleteProductSize, updateProductSize, getProductSize, getProductSizeById, uploadBannerImages, getAllProductsBanners, filters, sortBy, searchProductController, cleanupInvalidSizes} from '../controllers/product.controller.js';
 
 import {removeImageFromCloudinary} from '../controllers/category.controller.js';
 
@@ -27,19 +27,6 @@ productRouter.delete('/:id',auth,deleteProduct);
 productRouter.get('/:id',getProduct);
 productRouter.delete('/deteleImage',auth,removeImageFromCloudinary);
 productRouter.put('/updateProduct/:id',auth,updateProduct);
-
-productRouter.post('/productRAMS/create',auth,createProductRAMS);
-productRouter.delete('/productRAMS/:id',auth,deleteProductRAMS);
-productRouter.put('/productRAMS/:id',auth,updateProductRam);
-productRouter.get('/productRAMS/get',getProductRams);
-productRouter.get('/productRAMS/:id',getProductRamsById);
-
-productRouter.post('/productWeight/create',auth,createProductWEIGHT);
-productRouter.delete('/productWeight/:id',auth,deleteProductWEIGHT);
-productRouter.put('/productWeight/:id',auth,updateProductWeight);
-productRouter.get('/productWeight/get',getProductWeight);
-productRouter.get('/productWeight/:id',getProductWeightById);
-
 
 productRouter.post('/productSize/create',auth,createProductSize);
 productRouter.delete('/productSize/:id',auth,deleteProductSize);

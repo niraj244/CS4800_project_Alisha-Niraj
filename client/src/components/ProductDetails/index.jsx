@@ -93,14 +93,12 @@ export const ProductDetailsComponent = (props) => {
       countInStock: product?.countInStock,
       brand: product?.brand,
       size: props?.item?.size?.length !== 0 ? selectedTabName : '',
-      weight: props?.item?.productWeight?.length !== 0 ? selectedTabName : '',
-      ram: props?.item?.productRam?.length !== 0 ? selectedTabName : ''
 
     }
 
 
 
-    if (props?.item?.size?.length !== 0 || props?.item?.productWeight?.length !== 0 || props?.item?.productRam?.length !== 0) {
+    if (props?.item?.size?.length !== 0) {
       if (selectedTabName !== null) {
         setIsLoading(true);
 
@@ -235,34 +233,6 @@ export const ProductDetailsComponent = (props) => {
 
 
       {
-        props?.item?.productRam?.length !== 0 &&
-        <div className="flex items-center gap-3">
-          <span className="text-[16px]">RAM:</span>
-          <div className="flex items-center gap-1 actions">
-            {
-              props?.item?.productRam?.map((item, index) => {
-                return (
-                  <Button
-                    key={index}
-                    className={`${productActionIndex === index ?
-                      "!bg-primary !text-white" : ""
-                      }  ${tabError === true && 'error'}`}
-                    onClick={() => handleClickActiveTab(index, item)}
-                  >
-                    {item}
-                  </Button>
-                )
-              })
-            }
-
-
-          </div>
-        </div>
-      }
-
-
-
-      {
         props?.item?.size?.length !== 0 &&
         <div className="flex items-center gap-3">
           <span className="text-[16px]">SIZE:</span>
@@ -275,34 +245,6 @@ export const ProductDetailsComponent = (props) => {
                     className={`${productActionIndex === index ?
                       "!bg-primary !text-white" : ""
                       } ${tabError === true && 'error'}`}
-                    onClick={() => handleClickActiveTab(index, item)}
-                  >
-                    {item}
-                  </Button>
-                )
-              })
-            }
-
-
-          </div>
-        </div>
-      }
-
-
-
-      {
-        props?.item?.productWeight?.length !== 0 &&
-        <div className="flex items-center gap-3">
-          <span className="text-[16px]">WEIGHT:</span>
-          <div className="flex items-center gap-1 actions">
-            {
-              props?.item?.productWeight?.map((item, index) => {
-                return (
-                  <Button
-                    key={index}
-                    className={`${productActionIndex === index ?
-                      "!bg-primary !text-white" : ""
-                      }  ${tabError === true && 'error'}`}
                     onClick={() => handleClickActiveTab(index, item)}
                   >
                     {item}

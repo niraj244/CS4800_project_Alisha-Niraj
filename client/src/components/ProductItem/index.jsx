@@ -50,16 +50,13 @@ const ProductItem = (props) => {
       countInStock: product?.countInStock,
       brand: product?.brand,
       size: props?.item?.size?.length !== 0 ? selectedTabName : '',
-      weight: props?.item?.productWeight?.length !== 0 ? selectedTabName : '',
-      ram: props?.item?.productRam?.length !== 0 ? selectedTabName : ''
 
     }
 
 
     setIsLoading(true);
 
-    if (props?.item?.size?.length !== 0 || props?.item?.productRam?.length !== 0 || props?.item?.productWeight
-      ?.length !== 0) {
+    if (props?.item?.size?.length !== 0) {
       setIsShowTabs(true)
     } else {
       setIsAdded(true);
@@ -245,31 +242,6 @@ const ProductItem = (props) => {
 
             {
               props?.item?.size?.length !== 0 && props?.item?.size?.map((item, index) => {
-                return (
-                  <span key={index} className={`flex items-center justify-center p-1 px-2 bg-[rgba(255,555,255,0.8)] max-w-[35px] h-[25px]  
-          rounded-sm cursor-pointer hover:bg-white 
-          ${activeTab === index && '!bg-primary text-white'}`}
-                    onClick={() => handleClickActiveTab(index, item)}
-                  >{item}
-                  </span>)
-              })
-            }
-
-            {
-              props?.item?.productRam?.length !== 0 && props?.item?.productRam?.map((item, index) => {
-                return (
-                  <span key={index} className={`flex items-center justify-center p-1 px-2 bg-[rgba(255,555,255,0.8)] max-w-[45px] h-[25px]  
-          rounded-sm cursor-pointer hover:bg-white 
-          ${activeTab === index && '!bg-primary text-white'}`}
-                    onClick={() => handleClickActiveTab(index, item)}
-                  >{item}
-                  </span>)
-              })
-            }
-
-
-            {
-              props?.item?.productWeight?.length !== 0 && props?.item?.productWeight?.map((item, index) => {
                 return (
                   <span key={index} className={`flex items-center justify-center p-1 px-2 bg-[rgba(255,555,255,0.8)] max-w-[35px] h-[25px]  
           rounded-sm cursor-pointer hover:bg-white 

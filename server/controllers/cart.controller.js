@@ -3,7 +3,7 @@ import CartProductModel from "../models/cartProduct.modal.js";
 export const addToCartItemController = async (request, response) => {
     try {
         const userId = request.userId //middleware
-        const { productTitle, image, rating, price, oldPrice, quantity, subTotal, productId, countInStock, discount,size, weight, ram, brand } = request.body
+        const { productTitle, image, rating, price, oldPrice, quantity, subTotal, productId, countInStock, discount,size, brand } = request.body
 
         if (!productId) {
             return response.status(402).json({
@@ -16,11 +16,9 @@ export const addToCartItemController = async (request, response) => {
 
         // Normalize empty strings to null for consistent matching
         const normalizedSize = (size && size.trim() !== '') ? size.trim() : null;
-        const normalizedWeight = (weight && weight.trim() !== '') ? weight.trim() : null;
-        const normalizedRam = (ram && ram.trim() !== '') ? ram.trim() : null;
 
         // Build query to match exact variant combination
-        // Check for items with same productId AND exact same variant combination (size, weight, ram)
+        // Check for items with same productId AND exact same variant combination (size)
         const query = {
             userId: userId,
             productId: productId
@@ -37,55 +35,6 @@ export const addToCartItemController = async (request, response) => {
                 { size: '' },
                 { size: { $exists: false } }
             ];
-        }
-
-        // Handle weight - combine with size condition using $and
-        if (normalizedWeight !== null) {
-            query.weight = normalizedWeight;
-        } else {
-            const weightCondition = {
-                $or: [
-                    { weight: null },
-                    { weight: '' },
-                    { weight: { $exists: false } }
-                ]
-            };
-            
-            if (query.$or) {
-                // Combine size and weight conditions using $and
-                query.$and = [
-                    { $or: query.$or },
-                    weightCondition
-                ];
-                delete query.$or;
-            } else {
-                query.$or = weightCondition.$or;
-            }
-        }
-
-        // Handle ram - combine with previous conditions
-        if (normalizedRam !== null) {
-            query.ram = normalizedRam;
-        } else {
-            const ramCondition = {
-                $or: [
-                    { ram: null },
-                    { ram: '' },
-                    { ram: { $exists: false } }
-                ]
-            };
-            
-            if (query.$and) {
-                query.$and.push(ramCondition);
-            } else if (query.$or) {
-                query.$and = [
-                    { $or: query.$or },
-                    ramCondition
-                ];
-                delete query.$or;
-            } else {
-                query.$or = ramCondition.$or;
-            }
         }
 
         const checkItemCart = await CartProductModel.findOne(query)
@@ -110,9 +59,7 @@ export const addToCartItemController = async (request, response) => {
             userId:userId,
             brand:brand,
             discount:discount,
-            size:normalizedSize, // Use normalized values for consistency
-            weight:normalizedWeight,
-            ram:normalizedRam
+            size:normalizedSize // Use normalized values for consistency
         })
 
         const save = await cartItem.save();
@@ -164,7 +111,7 @@ export const updateCartItemQtyController = async (request, response) => {
     try {
 
         const userId = request.userId
-        const { _id, qty , subTotal, size, weight, ram} = request.body
+        const { _id, qty , subTotal, size} = request.body
 
 
 
@@ -182,9 +129,7 @@ export const updateCartItemQtyController = async (request, response) => {
             {
                 quantity: qty,
                 subTotal:subTotal,
-                size:size,
-                ram:ram,
-                weight:weight
+                size:size
             },
             { new: true }
         )

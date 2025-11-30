@@ -38,7 +38,7 @@ const AddSize = () => {
         setIsLoading(true);
 
         if (name === "") {
-            context.alertBox("error", "Please enter product RAM");
+            context.alertBox("error", "Please enter product SIZE");
             return false;
         }
 

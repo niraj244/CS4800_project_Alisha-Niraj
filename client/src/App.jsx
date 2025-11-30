@@ -176,8 +176,6 @@ function App() {
       countInStock: product?.countInStock,
       brand: product?.brand,
       size: product?.size,
-      weight: product?.weight,
-      ram: product?.ram
     }
 
 
@@ -264,8 +262,6 @@ function App() {
       discount: product.discount,
       description: product.description,
       size: product.size,
-      productRam: product.productRam,
-      productWeight: product.productWeight
     };
 
     setCompareData([...compareData, productToAdd]);

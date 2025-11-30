@@ -158,23 +158,6 @@ const Compare = () => {
                       </div>
                     )}
 
-                    {/* RAM */}
-                    {product.productRam && product.productRam.length > 0 && (
-                      <div>
-                        <p className="text-[12px] font-[500] mb-1">RAM:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {product.productRam.map((ram, idx) => (
-                            <span
-                              key={idx}
-                              className="text-[11px] bg-gray-100 px-2 py-1 rounded"
-                            >
-                              {ram}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
                     {/* Actions */}
                     <div className="flex flex-col gap-2 mt-4">
                       <Link to={`/product/${product._id}`} className="w-full">
@@ -258,18 +241,6 @@ const Compare = () => {
                           <td key={product._id} className="p-3">
                             {product.size && product.size.length > 0
                               ? product.size.join(", ")
-                              : "N/A"}
-                          </td>
-                        ))}
-                      </tr>
-                    )}
-                    {context?.compareData?.some(p => p.productRam && p.productRam.length > 0) && (
-                      <tr className="border-b border-gray-200">
-                        <td className="p-3 font-[600] bg-gray-50">RAM</td>
-                        {context?.compareData?.map((product) => (
-                          <td key={product._id} className="p-3">
-                            {product.productRam && product.productRam.length > 0
-                              ? product.productRam.join(", ")
                               : "N/A"}
                           </td>
                         ))}

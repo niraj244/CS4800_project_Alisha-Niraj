@@ -39,9 +39,7 @@ const EditProduct = () => {
         rating: "",
         isFeatured: false,
         discount: "",
-        productRam: [],
         size: [],
-        productWeight: [],
         bannerTitleName: '',
         bannerimages: [],
         isDisplayOnHomeBanner:false
@@ -52,8 +50,6 @@ const EditProduct = () => {
     const [productCat, setProductCat] = React.useState('');
     const [productSubCat, setProductSubCat] = React.useState('');
     const [productFeatured, setProductFeatured] = React.useState('');
-    const [productWeight, setProductWeight] = React.useState([]);
-    const [productWeightData, setProductWeightData] = React.useState([]);
     const [productSize, setProductSize] = React.useState([]);
     const [productSizeData, setProductSizeData] = React.useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -72,12 +68,6 @@ const EditProduct = () => {
 
 
     useEffect(() => {
-        fetchDataFromApi("/api/product/productWeight/get").then((res) => {
-            if (res?.error === false) {
-                setProductWeightData(res?.data);
-            }
-        })
-
         fetchDataFromApi("/api/product/productSize/get").then((res) => {
             if (res?.error === false) {
                 setProductSizeData(res?.data);
@@ -105,9 +95,7 @@ const EditProduct = () => {
                 rating: res?.product?.rating,
                 isFeatured: res?.product?.isFeatured,
                 discount: res?.product?.discount,
-                productRam: res?.product?.productRam,
                 size: res?.product?.size,
-                productWeight: res?.product?.productWeight,
                 bannerTitleName: res?.product?.bannerTitleName,
                 bannerimages: res?.product?.bannerimages,
                 isDisplayOnHomeBanner:res?.product?.isDisplayOnHomeBanner
@@ -119,7 +107,6 @@ const EditProduct = () => {
             setProductThirdLavelCat(res?.product?.thirdsubCatId);
             setProductFeatured(res?.product?.isFeatured)
             setProductSize(res?.product?.size)
-            setProductWeight(res?.product?.productWeight);
             setCheckedSwitch(res?.product?.isDisplayOnHomeBanner)
             
             // Set discount toggle based on whether discount exists and is > 0
@@ -169,18 +156,6 @@ const EditProduct = () => {
         formFields.isFeatured = event.target.value
     };
 
-    const handleChangeProductWeight = (event) => {
-
-        const {
-            target: { value },
-        } = event;
-        setProductWeight(
-            // On autofill we get a stringified value.
-            typeof value === "string" ? value.split(",") : value
-        );
-
-        formFields.productWeight = value;
-    };
 
     const handleChangeProductSize = (event) => {
 
@@ -572,32 +547,6 @@ const EditProduct = () => {
                         </div>
 
 
-
-
-                        <div className='col'>
-                            <h3 className='text-[14px] font-[500] mb-1 text-black'>Product Weight</h3>
-                            {
-                                productWeightData?.length !== 0 &&
-                                <Select
-                                    multiple
-                                    labelId="demo-simple-select-label"
-                                    id="productCatDrop"
-                                    size="small"
-                                    className='w-full'
-                                    value={productWeight}
-                                    label="Category"
-                                    onChange={handleChangeProductWeight}
-                                >
-
-                                    {
-                                        productWeightData?.map((item, index) => {
-                                            return <MenuItem key={index} value={item?.name}>{item?.name}</MenuItem>
-                                        })
-                                    }
-
-                                </Select>
-                            }
-                        </div>
 
 
                         <div className='col'>

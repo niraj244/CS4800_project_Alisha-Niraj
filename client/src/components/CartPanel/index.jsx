@@ -43,12 +43,10 @@ const CartPanel = (props) => {
                     </Link>
                   </h4>
                   
-                  {/* Display variant information (size, weight, ram) */}
-                  {(item?.size || item?.weight || item?.ram) && (
+                  {/* Display variant information (size) */}
+                  {item?.size && (
                     <div className="text-[11px] sm:text-[12px] text-gray-600 mt-1">
-                      {item?.size && <span>Size: {item.size} </span>}
-                      {item?.weight && <span>Weight: {item.weight} </span>}
-                      {item?.ram && <span>RAM: {item.ram}</span>}
+                      <span>Size: {item.size}</span>
                     </div>
                   )}
                   

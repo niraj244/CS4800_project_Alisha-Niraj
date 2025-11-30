@@ -35,9 +35,7 @@ const AddProduct = () => {
     rating: "",
     isFeatured: false,
     discount: "",
-    productRam: [],
     size: [],
-    productWeight: [],
     bannerTitleName: "",
     bannerimages: [],
     isDisplayOnHomeBanner: false,
@@ -46,8 +44,6 @@ const AddProduct = () => {
   const [productCat, setProductCat] = React.useState("");
   const [productSubCat, setProductSubCat] = React.useState("");
   const [productFeatured, setProductFeatured] = React.useState("");
-  const [productWeight, setProductWeight] = React.useState([]);
-  const [productWeightData, setProductWeightData] = React.useState([]);
   const [productSize, setProductSize] = React.useState([]);
   const [productSizeData, setProductSizeData] = React.useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -65,12 +61,6 @@ const AddProduct = () => {
   const context = useContext(MyContext);
 
   useEffect(() => {
-    fetchDataFromApi("/api/product/productWeight/get").then((res) => {
-      if (res?.error === false) {
-        setProductWeightData(res?.data);
-      }
-    });
-
     fetchDataFromApi("/api/product/productSize/get").then((res) => {
       if (res?.error === false) {
         setProductSizeData(res?.data);
@@ -111,17 +101,6 @@ const AddProduct = () => {
     formFields.isFeatured = event.target.value;
   };
 
-  const handleChangeProductWeight = (event) => {
-    const {
-      target: { value },
-    } = event;
-    setProductWeight(
-      // On autofill we get a stringified value.
-      typeof value === "string" ? value.split(",") : value
-    );
-
-    formFields.productWeight = value;
-  };
 
   const handleChangeProductSize = (event) => {
     const {
@@ -554,32 +533,6 @@ const AddProduct = () => {
                 value={formFields.discount}
                 onChange={onChangeInput}
               />
-            </div>
-
-            <div className="col">
-              <h3 className="text-[14px] font-[500] mb-1 text-black">
-                Product Weight
-              </h3>
-              {productWeightData?.length !== 0 && (
-                <Select
-                  multiple
-                  labelId="demo-simple-select-label"
-                  id="productCatDrop"
-                  size="small"
-                  className="w-full"
-                  value={productWeight}
-                  label="Category"
-                  onChange={handleChangeProductWeight}
-                >
-                  {productWeightData?.map((item, index) => {
-                    return (
-                      <MenuItem key={index} value={item?.name}>
-                        {item?.name}
-                      </MenuItem>
-                    );
-                  })}
-                </Select>
-              )}
             </div>
 
             <div className="col">

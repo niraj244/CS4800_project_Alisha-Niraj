@@ -11,8 +11,6 @@ import { formatPrice } from "../../utils/currency";
 const CartPage = () => {
 
   const [productSizeData, setProductSizeData] = useState([]);
-  const [productRamsData, setProductRamsData] = useState([]);
-  const [productWeightData, setProductWeightData] = useState([]);
   const context = useContext(MyContext);
 
   useEffect(() => {
@@ -25,17 +23,7 @@ const CartPage = () => {
       }
     })
 
-    fetchDataFromApi("/api/product/productRAMS/get").then((res) => {
-      if (res?.error === false) {
-        setProductRamsData(res?.data)
-      }
-    })
 
-    fetchDataFromApi("/api/product/productWeight/get").then((res) => {
-      if (res?.error === false) {
-        setProductWeightData(res?.data)
-      }
-    })
   }, []);
 
 
@@ -44,14 +32,6 @@ const CartPage = () => {
   const selectedSize = (item) => {
     if (item?.size !== "") {
       return item?.size;
-    }
-
-    if (item?.weight !== "") {
-      return item?.weight;
-    }
-
-    if (item?.ram !== "") {
-      return item?.ram;
     }
 
   }
@@ -74,7 +54,7 @@ const CartPage = () => {
 
               context?.cartData?.length !== 0 ? context?.cartData?.map((item, index) => {
                 return (
-                  <CartItems selected={() => selectedSize(item)} qty={item?.quantity} item={item} key={index} productSizeData={productSizeData} productRamsData={productRamsData} productWeightData={productWeightData} />
+                  <CartItems selected={() => selectedSize(item)} qty={item?.quantity} item={item} key={index} productSizeData={productSizeData} />
                 )
               })
 

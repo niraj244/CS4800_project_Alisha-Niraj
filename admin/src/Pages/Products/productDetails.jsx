@@ -148,29 +148,6 @@ const ProductDetails = () => {
 
 
                                 {
-                                    product?.productRam?.length !== 0 &&
-                                    <div className="flex items-center py-1">
-                                        <span className="w-[20%] font-[500] flex items-center gap-2  text-[14px]">
-                                            <MdFilterVintage className="opacity-65" /> RAM : </span>
-
-                                        <div className="flex items-center gap-2">
-                                            {
-                                                product?.productRam?.map((ram, index) => {
-                                                    return (
-                                                        <span className="inline-block p-1 shadow-sm bg-[#fff] text-[12px] font-[500]" key={index}>{ram}</span>
-                                                    )
-                                                })
-                                            }
-
-                                        </div>
-
-
-                                    </div>
-                                }
-
-
-
-                                {
                                     product?.size?.length !== 0 &&
                                     <div className="flex items-center py-1">
                                         <span className="w-[20%] font-[500] flex items-center gap-2  text-[14px]">
@@ -181,29 +158,6 @@ const ProductDetails = () => {
                                                 product?.size?.map((size, index) => {
                                                     return (
                                                         <span className="inline-block p-1 shadow-sm bg-[#fff] text-[12px] font-[500]" key={index}>{size}</span>
-                                                    )
-                                                })
-                                            }
-
-                                        </div>
-
-
-                                    </div>
-                                }
-
-
-
-                                {
-                                    product?.productWeight?.length !== 0 &&
-                                    <div className="flex items-center py-1">
-                                        <span className="w-[20%] font-[500] flex items-center gap-2  text-[14px]">
-                                            <MdFilterVintage className="opacity-65" /> Weight : </span>
-
-                                        <div className="flex items-center gap-2">
-                                            {
-                                                product?.productWeight?.map((weight, index) => {
-                                                    return (
-                                                        <span className="inline-block p-1 shadow-sm bg-[#fff] text-[12px] font-[500]" key={index}>{weight}</span>
                                                     )
                                                 })
                                             }

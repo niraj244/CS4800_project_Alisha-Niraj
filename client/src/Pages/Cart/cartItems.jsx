@@ -67,8 +67,6 @@ const CartItems = (props) => {
       qty: qty,
       subTotal: props?.item?.price * qty,
       size: props?.item?.size !== "" ? selectedVal : '',
-      weight: props?.item?.weight !== "" ? selectedVal : '',
-      ram: props?.item?.ram !== "" ? selectedVal : '',
     }
 
 
@@ -92,64 +90,6 @@ const CartItems = (props) => {
           })
         } else {
           context.alertBox("error", `Product not available with the size of ${selectedVal}`);
-        }
-
-
-      })
-
-    }
-
-
-    //if product weight available
-    if (field === "weight") {
-
-      fetchDataFromApi(`/api/product/${props?.item?.productId}`).then((res) => {
-        const product = res?.product;
-
-
-        const item = product?.productWeight?.filter((weight) =>
-          weight?.includes(selectedVal)
-        )
-
-        if (item?.length !== 0) {
-          editData("/api/cart/update-qty", cartObj).then((res) => {
-            if (res?.data?.error === false) {
-              context.alertBox("success", res?.data?.message);
-              context?.getCartItems();
-            }
-          })
-        } else {
-          context.alertBox("error", `Product not available with the weight of ${selectedVal}`);
-        }
-
-
-      })
-
-    }
-
-
-
-
-    //if product ram available
-    if (field === "ram") {
-
-      fetchDataFromApi(`/api/product/${props?.item?.productId}`).then((res) => {
-        const product = res?.product;
-
-
-        const item = product?.productRam?.filter((ram) =>
-          ram?.includes(selectedVal)
-        )
-
-        if (item?.length !== 0) {
-          editData("/api/cart/update-qty", cartObj).then((res) => {
-            if (res?.data?.error === false) {
-              context.alertBox("success", res?.data?.message);
-              context?.getCartItems();
-            }
-          })
-        } else {
-          context.alertBox("error", `Product not available with the ram of ${selectedVal}`);
         }
 
 
@@ -222,92 +162,6 @@ const CartItems = (props) => {
                           <MenuItem key={index}
                             className={`${item?.name === selectedSize && 'selected'}`}
                             onClick={() => updateCart(item?.name, props?.item?.quantity, "size")}>
-                            {item?.name}
-                          </MenuItem>
-                        )
-                      })
-                    }
-
-                  </Menu>
-                </div>
-              }
-            </>
-          }
-
-
-          {
-            props?.item?.ram !== "" &&
-            <>
-              {
-                props?.productRamsData?.length !== 0 &&
-                <div className="relative">
-                  <span
-                    className="flex items-center justify-center bg-[#f1f1f1] text-[11px]
-       font-[600] py-1 px-2 rounded-md cursor-pointer"
-                    onClick={handleClickSize}
-                  >
-                    RAM: {selectedSize} <GoTriangleDown />
-                  </span>
-
-                  <Menu
-                    id="size-menu"
-                    anchorEl={sizeanchorEl}
-                    open={openSize}
-                    onClose={() => handleCloseSize(null)}
-                    MenuListProps={{
-                      "aria-labelledby": "basic-button",
-                    }}
-                  >
-                    {
-                      props?.productRamsData?.map((item, index) => {
-                        return (
-                          <MenuItem key={index}
-                            className={`${item?.name === selectedSize && 'selected'}`}
-                            onClick={() => updateCart(item?.name, props?.item?.quantity, "ram")}>
-                            {item?.name}
-                          </MenuItem>
-                        )
-                      })
-                    }
-
-                  </Menu>
-                </div>
-              }
-            </>
-          }
-
-
-
-
-          {
-            props?.item?.weight !== "" &&
-            <>
-              {
-                props?.productWeightData?.length !== 0 &&
-                <div className="relative">
-                  <span
-                    className="flex items-center justify-center bg-[#f1f1f1] text-[11px]
-       font-[600] py-1 px-2 rounded-md cursor-pointer"
-                    onClick={handleClickSize}
-                  >
-                    Weight: {selectedSize} <GoTriangleDown />
-                  </span>
-
-                  <Menu
-                    id="size-menu"
-                    anchorEl={sizeanchorEl}
-                    open={openSize}
-                    onClose={() => handleCloseSize(null)}
-                    MenuListProps={{
-                      "aria-labelledby": "basic-button",
-                    }}
-                  >
-                    {
-                      props?.productWeightData?.map((item, index) => {
-                        return (
-                          <MenuItem key={index}
-                            className={`${item?.name === selectedSize && 'selected'}`}
-                            onClick={() => updateCart(item?.name, props?.item?.quantity, "weight")}>
                             {item?.name}
                           </MenuItem>
                         )

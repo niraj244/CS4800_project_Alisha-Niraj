@@ -24,7 +24,6 @@ import { fetchDataFromApi } from "./utils/api";
 import { useEffect } from "react";
 import Profile from "./Pages/Profile";
 import ProductDetails from "./Pages/Products/productDetails";
-import AddWeight from "./Pages/Products/addWeight";
 import AddSize from "./Pages/Products/addSize";
 import BannerV1List from "./Pages/Banners/bannerV1List";
 import { BannerList2 } from "./Pages/Banners/bannerList2";
@@ -346,31 +345,6 @@ function App() {
       ),
     },
 
-    {
-      path: "/product/addWeight",
-      exact: true,
-      element: (
-        <>
-          <section className="main">
-            <Header />
-            <div className="contentMain flex">
-              <div
-                className={`overflow-hidden sidebarWrapper ${isSidebarOpen === true ? windowWidth < 992 ? `w-[${sidebarWidth / 1.5}%]` : `w-[20%]` : "w-[0px] opacity-0 invisible"
-                  } transition-all`}
-              >
-                <Sidebar />
-              </div>
-              <div
-                className={`contentRight overflow-hidden py-4 px-5 ${isSidebarOpen === true && windowWidth < 992 && 'opacity-0'}  transition-all`}
-                style={{ width: isSidebarOpen === false ? "100%" : '80%' }}
-              >
-                <AddWeight />
-              </div>
-            </div>
-          </section>
-        </>
-      ),
-    },
     {
       path: "/product/addSize",
       exact: true,
