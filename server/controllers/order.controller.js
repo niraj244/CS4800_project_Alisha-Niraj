@@ -107,11 +107,28 @@ export async function getUserOrderDetailsController(request, response) {
     try {
         const userId = request.userId // order id
 
-        const { page, limit } = request.query;
+        const { page, limit, status } = request.query;
 
-        const orderlist = await OrderModel.find({ userId: userId }).sort({ createdAt: -1 }).populate('delivery_address userId').skip((page - 1) * limit).limit(parseInt(limit));
+        // Build query filter
+        let queryFilter = { userId: userId };
 
-        const orderTotal = await OrderModel.find({ userId: userId }).sort({ createdAt: -1 }).populate('delivery_address userId');
+        // Filter by status if provided
+        if (status && status !== 'all') {
+            if (status === 'processing') {
+                // Processing includes: pending, confirm, processing
+                queryFilter.order_status = { $in: ['pending', 'confirm', 'processing'] };
+            } else if (status === 'shipped') {
+                queryFilter.order_status = 'shipped';
+            } else if (status === 'delivered') {
+                queryFilter.order_status = 'delivered';
+            } else if (status === 'returns') {
+                queryFilter.order_status = 'returns';
+            }
+        }
+
+        const orderlist = await OrderModel.find(queryFilter).sort({ createdAt: -1 }).populate('delivery_address userId').skip((page - 1) * limit).limit(parseInt(limit));
+
+        const orderTotal = await OrderModel.find(queryFilter).sort({ createdAt: -1 }).populate('delivery_address userId');
 
         const total = await orderTotal?.length;
 

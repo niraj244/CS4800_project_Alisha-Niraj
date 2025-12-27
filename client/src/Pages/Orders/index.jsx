@@ -9,6 +9,154 @@ import Pagination from "@mui/material/Pagination";
 import { formatPrice } from "../../utils/currency";
 import { Link } from "react-router-dom";
 
+// Helper functions
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+};
+
+const getTotalItems = (products) => {
+  if (!products || !Array.isArray(products)) return 0;
+  return products.reduce((total, product) => total + (product.quantity || 0), 0);
+};
+
+const getOrderStatusText = (status) => {
+  const statusMap = {
+    'delivered': 'Delivered',
+    'confirm': 'Confirmed',
+    'pending': 'Processing',
+    'shipped': 'Shipped',
+    'processing': 'Processing'
+  };
+  return statusMap[status?.toLowerCase()] || status || 'Processing';
+};
+
+// Reusable Order Card Component
+const OrderCard = ({ order, index }) => {
+  const totalItems = getTotalItems(order?.products);
+  const orderStatus = order?.order_status?.toLowerCase();
+  const isDelivered = orderStatus === 'delivered';
+  const isShipped = orderStatus === 'shipped';
+  const isProcessing = orderStatus === 'processing' || orderStatus === 'pending' || orderStatus === 'confirm';
+
+  return (
+    <div key={order?._id || index} className="border border-gray-200 rounded-lg p-4 bg-white">
+      {/* Header with status and view details */}
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          {isDelivered && order?.updatedAt && (
+            <p className="text-[14px] text-gray-600 mb-1">
+              {getOrderStatusText(order?.order_status)} on {formatDate(order?.updatedAt)}
+            </p>
+          )}
+          {isShipped && !isDelivered && (
+            <p className="text-[14px] text-gray-600 mb-1">
+              {getOrderStatusText(order?.order_status)}
+            </p>
+          )}
+          {isProcessing && !isShipped && !isDelivered && (
+            <p className="text-[14px] text-gray-600 mb-1">
+              {getOrderStatusText(order?.order_status)}
+            </p>
+          )}
+          {isDelivered && (
+            <Link to="#" className="text-[13px] text-primary hover:underline">
+              View Delivery Photo &gt;
+            </Link>
+          )}
+        </div>
+        <Link to="#" className="text-[13px] text-primary hover:underline">
+          View order details &gt;
+        </Link>
+      </div>
+
+      {/* Product and Actions */}
+      <div className="flex gap-4 mb-4 items-start">
+        {/* Product Images Carousel */}
+        <div className="flex gap-2 overflow-x-auto flex-1">
+          {order?.products && order.products.length > 0 ? (
+            order.products.map((product, productIndex) => (
+              <div key={productIndex} className="relative w-[120px] h-[120px] flex-shrink-0">
+                {product?.image ? (
+                  <>
+                    <img 
+                      src={product.image} 
+                      alt={product.productTitle}
+                      className="w-full h-full object-cover rounded-md"
+                    />
+                    {product.quantity > 1 && (
+                      <div className="absolute top-0 right-0 bg-black bg-opacity-70 text-white text-[11px] px-1.5 py-0.5 rounded">
+                        x{product.quantity}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
+                    <span className="text-gray-400 text-xs">No Image</span>
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="w-[120px] h-[120px] bg-gray-200 rounded-md flex items-center justify-center">
+              <span className="text-gray-400 text-xs">No Products</span>
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-2 ml-auto">
+          <Button 
+            variant="contained" 
+            className="!bg-primary !text-white !normal-case !text-[13px] !py-1.5 !min-w-[140px] !w-[140px]"
+            onClick={() => {}}
+          >
+            Track
+          </Button>
+          <Button 
+            variant="outlined" 
+            className="!border-gray-300 !text-gray-700 !normal-case !text-[13px] !py-1.5 !min-w-[140px] !w-[140px]"
+            onClick={() => {}}
+          >
+            Leave a review
+          </Button>
+          <Button 
+            variant="outlined" 
+            className="!border-gray-300 !text-gray-700 !normal-case !text-[13px] !py-1.5 !min-w-[140px] !w-[140px]"
+            onClick={() => {}}
+          >
+            Return/Refund
+          </Button>
+          <Button 
+            variant="outlined" 
+            className="!border-gray-300 !text-gray-700 !normal-case !text-[13px] !py-1.5 !min-w-[140px] !w-[140px]"
+            onClick={() => {}}
+          >
+            Buy this again
+          </Button>
+        </div>
+      </div>
+
+      {/* Order Summary */}
+      <div className="border-t border-gray-200 pt-3 mt-3">
+        <div className="flex flex-wrap gap-4 text-[13px] text-gray-600">
+          <span>
+            <span className="font-semibold">{totalItems} items:</span> {formatPrice(order?.totalAmt || 0)}
+          </span>
+          <span>
+            <span className="font-semibold">Order Time:</span> {formatDate(order?.createdAt)}
+          </span>
+          <span>
+            <span className="font-semibold">Order ID:</span> {order?._id}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Orders = () => {
   const [isOpenOrderdProduct, setIsOpenOrderdProduct] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -49,13 +197,19 @@ const Orders = () => {
   };
 
 
+  // Reset page to 1 when filter changes
   useEffect(() => {
-    fetchDataFromApi(`/api/order/order-list/orders?page=${page}&limit=5`).then((res) => {
+    setPage(1);
+  }, [activeFilter])
+
+  useEffect(() => {
+    const statusParam = activeFilter === 'all' ? '' : `&status=${activeFilter}`;
+    fetchDataFromApi(`/api/order/order-list/orders?page=${page}&limit=5${statusParam}`).then((res) => {
       if (res?.error === false) {
         setOrders(res)
       }
     })
-  }, [page])
+  }, [page, activeFilter])
 
   return (
     <section className="py-5 lg:py-10 w-full">
@@ -138,129 +292,9 @@ const Orders = () => {
                         <p className="text-gray-500">No orders found.</p>
                       </div>
                     ) : (
-                      orders?.data?.map((order, index) => {
-                      const totalItems = getTotalItems(order?.products);
-                      const firstProduct = order?.products?.[0];
-                      const orderStatus = order?.order_status?.toLowerCase();
-                      const isDelivered = orderStatus === 'delivered';
-                      const isShipped = orderStatus === 'shipped';
-                      const isProcessing = orderStatus === 'processing' || orderStatus === 'pending' || orderStatus === 'confirm';
-                      
-                      return (
-                        <div key={order?._id || index} className="border border-gray-200 rounded-lg p-4 bg-white">
-                          {/* Header with status and view details */}
-                          <div className="flex justify-between items-start mb-4">
-                            <div>
-                              {isDelivered && order?.updatedAt && (
-                                <p className="text-[14px] text-gray-600 mb-1">
-                                  {getOrderStatusText(order?.order_status)} on {formatDate(order?.updatedAt)}
-                                </p>
-                              )}
-                              {isShipped && (
-                                <p className="text-[14px] text-gray-600 mb-1">
-                                  {getOrderStatusText(order?.order_status)}
-                                </p>
-                              )}
-                              {isProcessing && (
-                                <p className="text-[14px] text-gray-600 mb-1">
-                                  {getOrderStatusText(order?.order_status)}
-                                </p>
-                              )}
-                              {isDelivered && (
-                                <Link to="#" className="text-[13px] text-primary hover:underline">
-                                  View Delivery Photo &gt;
-                                </Link>
-                              )}
-                            </div>
-                            <Link to="#" className="text-[13px] text-primary hover:underline">
-                              View order details &gt;
-                            </Link>
-                          </div>
-
-                          {/* Product and Actions */}
-                          <div className="flex gap-4 mb-4 items-start">
-                            {/* Product Images Carousel */}
-                            <div className="flex gap-2 overflow-x-auto flex-1">
-                              {order?.products && order.products.length > 0 ? (
-                                order.products.map((product, productIndex) => (
-                                  <div key={productIndex} className="relative w-[120px] h-[120px] flex-shrink-0">
-                                    {product?.image ? (
-                                      <>
-                                        <img 
-                                          src={product.image} 
-                                          alt={product.productTitle}
-                                          className="w-full h-full object-cover rounded-md"
-                                        />
-                                        {product.quantity > 1 && (
-                                          <div className="absolute top-0 right-0 bg-black bg-opacity-70 text-white text-[11px] px-1.5 py-0.5 rounded">
-                                            x{product.quantity}
-                                          </div>
-                                        )}
-                                      </>
-                                    ) : (
-                                      <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
-                                        <span className="text-gray-400 text-xs">No Image</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="w-[120px] h-[120px] bg-gray-200 rounded-md flex items-center justify-center">
-                                  <span className="text-gray-400 text-xs">No Products</span>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex flex-col gap-2 ml-auto">
-                              <Button 
-                                variant="contained" 
-                                className="!bg-primary !text-white !normal-case !text-[13px] !py-1.5 !min-w-[140px] !w-[140px]"
-                                onClick={() => {}}
-                              >
-                                Track
-                              </Button>
-                              <Button 
-                                variant="outlined" 
-                                className="!border-gray-300 !text-gray-700 !normal-case !text-[13px] !py-1.5 !min-w-[140px] !w-[140px]"
-                                onClick={() => {}}
-                              >
-                                Leave a review
-                              </Button>
-                              <Button 
-                                variant="outlined" 
-                                className="!border-gray-300 !text-gray-700 !normal-case !text-[13px] !py-1.5 !min-w-[140px] !w-[140px]"
-                                onClick={() => {}}
-                              >
-                                Return/Refund
-                              </Button>
-                              <Button 
-                                variant="outlined" 
-                                className="!border-gray-300 !text-gray-700 !normal-case !text-[13px] !py-1.5 !min-w-[140px] !w-[140px]"
-                                onClick={() => {}}
-                              >
-                                Buy this again
-                              </Button>
-                            </div>
-                          </div>
-
-                          {/* Order Summary */}
-                          <div className="border-t border-gray-200 pt-3 mt-3">
-                            <div className="flex flex-wrap gap-4 text-[13px] text-gray-600">
-                              <span>
-                                <span className="font-semibold">{totalItems} items:</span> {formatPrice(order?.totalAmt || 0)}
-                              </span>
-                              <span>
-                                <span className="font-semibold">Order Time:</span> {formatDate(order?.createdAt)}
-                              </span>
-                              <span>
-                                <span className="font-semibold">Order ID:</span> {order?._id}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
+                      orders?.data?.map((order, index) => (
+                        <OrderCard key={order?._id || index} order={order} index={index} />
+                      ))
                     )}
                   </div>
 
@@ -498,32 +532,140 @@ const Orders = () => {
                 </>
               )}
 
-              {/* Processing Tab - Empty for now */}
+              {/* Processing Tab */}
               {activeFilter === 'processing' && (
-                <div className="py-10 text-center">
-                  <p className="text-gray-500">No processing orders at the moment.</p>
-                </div>
+                <>
+                  <p className="mt-0 mb-0">
+                    There are <span className="font-bold text-primary">{ orders?.data?.length || 0}</span>{" "}
+                    processing orders
+                  </p>
+
+                  <div className="mt-5 space-y-4">
+                    {orders?.data?.length === 0 ? (
+                      <div className="py-10 text-center">
+                        <p className="text-gray-500">No processing orders at the moment.</p>
+                      </div>
+                    ) : (
+                      orders?.data?.map((order, index) => (
+                        <OrderCard key={order?._id || index} order={order} index={index} />
+                      ))
+                    )}
+                  </div>
+
+                  {
+                    orders?.totalPages > 1 &&
+                    <div className="flex items-center justify-center mt-10">
+                      <Pagination
+                        showFirstButton showLastButton
+                        count={orders?.totalPages}
+                        page={page}
+                        onChange={(e, value) => setPage(value)}
+                      />
+                    </div>
+                  }
+                </>
               )}
 
-              {/* Shipped Tab - Empty for now */}
+              {/* Shipped Tab */}
               {activeFilter === 'shipped' && (
-                <div className="py-10 text-center">
-                  <p className="text-gray-500">No shipped orders at the moment.</p>
-                </div>
+                <>
+                  <p className="mt-0 mb-0">
+                    There are <span className="font-bold text-primary">{ orders?.data?.length || 0}</span>{" "}
+                    shipped orders
+                  </p>
+
+                  <div className="mt-5 space-y-4">
+                    {orders?.data?.length === 0 ? (
+                      <div className="py-10 text-center">
+                        <p className="text-gray-500">No shipped orders at the moment.</p>
+                      </div>
+                    ) : (
+                      orders?.data?.map((order, index) => (
+                        <OrderCard key={order?._id || index} order={order} index={index} />
+                      ))
+                    )}
+                  </div>
+
+                  {
+                    orders?.totalPages > 1 &&
+                    <div className="flex items-center justify-center mt-10">
+                      <Pagination
+                        showFirstButton showLastButton
+                        count={orders?.totalPages}
+                        page={page}
+                        onChange={(e, value) => setPage(value)}
+                      />
+                    </div>
+                  }
+                </>
               )}
 
-              {/* Delivered Tab - Empty for now */}
+              {/* Delivered Tab */}
               {activeFilter === 'delivered' && (
-                <div className="py-10 text-center">
-                  <p className="text-gray-500">No delivered orders at the moment.</p>
-                </div>
+                <>
+                  <p className="mt-0 mb-0">
+                    There are <span className="font-bold text-primary">{ orders?.data?.length || 0}</span>{" "}
+                    delivered orders
+                  </p>
+
+                  <div className="mt-5 space-y-4">
+                    {orders?.data?.length === 0 ? (
+                      <div className="py-10 text-center">
+                        <p className="text-gray-500">No delivered orders at the moment.</p>
+                      </div>
+                    ) : (
+                      orders?.data?.map((order, index) => (
+                        <OrderCard key={order?._id || index} order={order} index={index} />
+                      ))
+                    )}
+                  </div>
+
+                  {
+                    orders?.totalPages > 1 &&
+                    <div className="flex items-center justify-center mt-10">
+                      <Pagination
+                        showFirstButton showLastButton
+                        count={orders?.totalPages}
+                        page={page}
+                        onChange={(e, value) => setPage(value)}
+                      />
+                    </div>
+                  }
+                </>
               )}
 
-              {/* Returns Tab - Empty for now */}
+              {/* Returns Tab */}
               {activeFilter === 'returns' && (
-                <div className="py-10 text-center">
-                  <p className="text-gray-500">No returns at the moment.</p>
-                </div>
+                <>
+                  <p className="mt-0 mb-0">
+                    There are <span className="font-bold text-primary">{ orders?.data?.length || 0}</span>{" "}
+                    returns
+                  </p>
+
+                  <div className="mt-5 space-y-4">
+                    {orders?.data?.length === 0 ? (
+                      <div className="py-10 text-center">
+                        <p className="text-gray-500">No returns at the moment.</p>
+                      </div>
+                    ) : (
+                      orders?.data?.map((order, index) => (
+                        <OrderCard key={order?._id || index} order={order} index={index} />
+                      ))
+                    )}
+                  </div>
+
+                  {
+                    orders?.totalPages > 1 &&
+                    <div className="flex items-center justify-center mt-10">
+                      <Pagination
+                        showFirstButton showLastButton
+                        count={orders?.totalPages}
+                        page={page}
+                        onChange={(e, value) => setPage(value)}
+                      />
+                    </div>
+                  }
+                </>
               )}
             </div>
           </div>
