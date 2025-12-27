@@ -220,37 +220,26 @@ const Orders = () => {
                               >
                                 Track
                               </Button>
-                              {isDelivered && (
-                                <>
-                                  <Button 
-                                    variant="outlined" 
-                                    className="!border-gray-300 !text-gray-700 !normal-case !text-[13px] !py-1.5 !min-w-[140px] !w-[140px]"
-                                    onClick={() => {}}
-                                  >
-                                    Leave a review
-                                  </Button>
-                                  <Button 
-                                    variant="outlined" 
-                                    className="!border-gray-300 !text-gray-700 !normal-case !text-[13px] !py-1.5 !min-w-[140px] !w-[140px]"
-                                    onClick={() => {}}
-                                  >
-                                    Return/Refund
-                                  </Button>
-                                </>
-                              )}
                               <Button 
                                 variant="outlined" 
                                 className="!border-gray-300 !text-gray-700 !normal-case !text-[13px] !py-1.5 !min-w-[140px] !w-[140px]"
                                 onClick={() => {}}
                               >
-                                Buy this again
+                                Leave a review
                               </Button>
                               <Button 
                                 variant="outlined" 
                                 className="!border-gray-300 !text-gray-700 !normal-case !text-[13px] !py-1.5 !min-w-[140px] !w-[140px]"
                                 onClick={() => {}}
                               >
-                                Price match/adjustment
+                                Return/Refund
+                              </Button>
+                              <Button 
+                                variant="outlined" 
+                                className="!border-gray-300 !text-gray-700 !normal-case !text-[13px] !py-1.5 !min-w-[140px] !w-[140px]"
+                                onClick={() => {}}
+                              >
+                                Buy this again
                               </Button>
                             </div>
                           </div>
