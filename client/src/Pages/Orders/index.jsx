@@ -11,6 +11,7 @@ import { formatPrice } from "../../utils/currency";
 const Orders = () => {
   const [isOpenOrderdProduct, setIsOpenOrderdProduct] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [activeFilter, setActiveFilter] = useState('all');
 
   const [page, setPage] = useState(1);
 
@@ -42,13 +43,72 @@ const Orders = () => {
         <div className="col2 w-full lg:w-[80%]">
           <div className="shadow-md rounded-md bg-white">
             <div className="py-5 px-5 border-b border-[rgba(0,0,0,0.1)]">
-              <h2>My Orders</h2>
-              <p className="mt-0 mb-0">
-                There are <span className="font-bold text-primary">{ orders?.data?.length}</span>{" "}
-                orders
-              </p>
+              <h2>Your orders</h2>
+              
+              {/* Filter Tabs */}
+              <div className="mt-4 mb-4">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setActiveFilter('all')}
+                    className={`px-4 py-2 rounded-md text-[14px] font-[500] transition-all ${
+                      activeFilter === 'all'
+                        ? 'bg-primary text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    All orders
+                  </button>
+                  <button
+                    onClick={() => setActiveFilter('processing')}
+                    className={`px-4 py-2 rounded-md text-[14px] font-[500] transition-all ${
+                      activeFilter === 'processing'
+                        ? 'bg-primary text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    Processing
+                  </button>
+                  <button
+                    onClick={() => setActiveFilter('shipped')}
+                    className={`px-4 py-2 rounded-md text-[14px] font-[500] transition-all ${
+                      activeFilter === 'shipped'
+                        ? 'bg-primary text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    Shipped
+                  </button>
+                  <button
+                    onClick={() => setActiveFilter('delivered')}
+                    className={`px-4 py-2 rounded-md text-[14px] font-[500] transition-all ${
+                      activeFilter === 'delivered'
+                        ? 'bg-primary text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    Delivered
+                  </button>
+                  <button
+                    onClick={() => setActiveFilter('returns')}
+                    className={`px-4 py-2 rounded-md text-[14px] font-[500] transition-all ${
+                      activeFilter === 'returns'
+                        ? 'bg-primary text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    Returns
+                  </button>
+                </div>
+              </div>
 
-              <div className="relative overflow-x-auto mt-5">
+              {activeFilter === 'all' && (
+                <>
+                  <p className="mt-0 mb-0">
+                    There are <span className="font-bold text-primary">{ orders?.data?.length}</span>{" "}
+                    orders
+                  </p>
+
+                  <div className="relative overflow-x-auto mt-5">
                 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                   <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                     <tr>
@@ -267,18 +327,47 @@ const Orders = () => {
                 </table>
               </div>
 
+                  {
+                    orders?.totalPages > 1 &&
+                    <div className="flex items-center justify-center mt-10">
+                      <Pagination
+                        showFirstButton showLastButton
+                        count={orders?.totalPages}
+                        page={page}
+                        onChange={(e, value) => setPage(value)}
+                      />
+                    </div>
+                  }
+                </>
+              )}
 
-              {
-                orders?.totalPages > 1 &&
-                <div className="flex items-center justify-center mt-10">
-                  <Pagination
-                    showFirstButton showLastButton
-                    count={orders?.totalPages}
-                    page={page}
-                    onChange={(e, value) => setPage(value)}
-                  />
+              {/* Processing Tab - Empty for now */}
+              {activeFilter === 'processing' && (
+                <div className="py-10 text-center">
+                  <p className="text-gray-500">No processing orders at the moment.</p>
                 </div>
-              }
+              )}
+
+              {/* Shipped Tab - Empty for now */}
+              {activeFilter === 'shipped' && (
+                <div className="py-10 text-center">
+                  <p className="text-gray-500">No shipped orders at the moment.</p>
+                </div>
+              )}
+
+              {/* Delivered Tab - Empty for now */}
+              {activeFilter === 'delivered' && (
+                <div className="py-10 text-center">
+                  <p className="text-gray-500">No delivered orders at the moment.</p>
+                </div>
+              )}
+
+              {/* Returns Tab - Empty for now */}
+              {activeFilter === 'returns' && (
+                <div className="py-10 text-center">
+                  <p className="text-gray-500">No returns at the moment.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

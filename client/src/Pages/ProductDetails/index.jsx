@@ -64,6 +64,15 @@ export const ProductDetails = () => {
 
   }
 
+  const refreshProductData = () => {
+    // Refresh product data to get updated rating
+    fetchDataFromApi(`/api/product/${id}`).then((res) => {
+      if (res?.error === false) {
+        setProductData(res?.product);
+      }
+    })
+  }
+
   return (
     <>
       <div className="py-5 hidden">
@@ -154,7 +163,7 @@ export const ProductDetails = () => {
                 {activeTab === 1 && (
                   <div className="shadow-none lg:shadow-md w-full sm:w-[80%] py-0  lg:py-5 px-0 lg:px-8 rounded-md">
                     {
-                      productData?.length !== 0 && <Reviews productId={productData?._id} setReviewsCount={setReviewsCount} />
+                      productData?.length !== 0 && <Reviews productId={productData?._id} setReviewsCount={setReviewsCount} refreshProductData={refreshProductData} />
                     }
 
                   </div>

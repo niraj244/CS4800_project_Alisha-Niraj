@@ -1,5 +1,6 @@
 import ProductModel from '../models/product.modal.js';
 import ProductSIZEModel from '../models/productSIZE.js';
+import ReviewModel from '../models/reviews.model.js.js';
 
 import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
@@ -940,6 +941,25 @@ export async function getProduct(request, response) {
                 error: true,
                 success: false
             })
+        }
+
+        // Recalculate rating from reviews
+        const allReviews = await ReviewModel.find({ productId: product._id.toString() });
+        
+        if (allReviews.length > 0) {
+            const totalRating = allReviews.reduce((sum, rev) => {
+                const revRating = typeof rev.rating === 'string' ? parseFloat(rev.rating) : rev.rating;
+                return sum + (revRating || 0);
+            }, 0);
+            
+            const averageRating = totalRating / allReviews.length;
+            const roundedRating = Math.round(averageRating * 10) / 10; // Round to 1 decimal place
+            
+            // Update product rating if it's different
+            if (product.rating !== roundedRating) {
+                product.rating = roundedRating;
+                await product.save();
+            }
         }
 
         // Filter out invalid sizes before returning

@@ -14,8 +14,10 @@ const reviewsSchema = new mongoose.Schema({
         default : '',
     },
     rating : {
-        type : String,
-        default : '',
+        type : Number,
+        default : 0,
+        min: 0,
+        max: 5,
     },
     userId : {
         type : String,
@@ -24,6 +26,10 @@ const reviewsSchema = new mongoose.Schema({
     productId : {
         type : String,
         default : '',
+    },
+    reviewImages : {
+        type : [String],
+        default : [],
     },
 },{
     timestamps : true

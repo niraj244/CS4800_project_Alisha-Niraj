@@ -9,6 +9,7 @@ import genertedRefreshToken from '../utils/generatedRefreshToken.js';
 import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
 import ReviewModel from '../models/reviews.model.js.js';
+import ProductModel from '../models/product.modal.js';
 
 cloudinary.config({
     cloud_name: process.env.cloudinary_Config_Cloud_Name,
@@ -910,23 +911,113 @@ export async function userDetails(request, response) {
 }
 
 
+//upload review images
+var reviewImagesArr = [];
+export async function uploadReviewImages(request, response) {
+    try {
+        reviewImagesArr = [];
+
+        const image = request.files;
+
+        const options = {
+            use_filename: true,
+            unique_filename: false,
+            overwrite: false,
+        };
+
+        for (let i = 0; i < image?.length; i++) {
+
+            const img = await cloudinary.uploader.upload(
+                image[i].path,
+                options,
+                function (error, result) {
+                    reviewImagesArr.push(result.secure_url);
+                    fs.unlinkSync(`uploads/${request.files[i].filename}`);
+                }
+            );
+        }
+
+        return response.status(200).json({
+            images: reviewImagesArr
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            message: error.message || error,
+            error: true,
+            success: false
+        })
+    }
+}
+
 //review controller
 export async function addReview(request, response) {
     try {
 
-        const {image, userName, review, rating, userId, productId} = request.body;
+        const {image, userName, review, rating, userId, productId, reviewImages} = request.body;
+
+        // Validate required fields
+        if (!review || !rating || !userId || !productId) {
+            return response.status(400).json({
+                message: "Please provide all required fields",
+                error: true,
+                success: false
+            })
+        }
+
+        // Convert rating to number if it's a string
+        const ratingNumber = typeof rating === 'string' ? parseFloat(rating) : rating;
+
+        // Validate rating is between 0 and 5
+        if (isNaN(ratingNumber) || ratingNumber < 0 || ratingNumber > 5) {
+            return response.status(400).json({
+                message: "Rating must be a number between 0 and 5",
+                error: true,
+                success: false
+            })
+        }
+
+        // Handle reviewImages - can be array or single string
+        let reviewImagesArray = [];
+        if (reviewImages) {
+            if (Array.isArray(reviewImages)) {
+                reviewImagesArray = reviewImages;
+            } else {
+                reviewImagesArray = [reviewImages];
+            }
+        }
 
         const userReview = new ReviewModel({
-            image:image,
-            userName:userName,
+            image:image || '',
+            userName:userName || '',
             review:review,
-            rating:rating,
+            rating:ratingNumber,
             userId:userId,
-            productId:productId
+            productId:productId,
+            reviewImages: reviewImagesArray
         })
 
-
         await userReview.save();
+        
+        // Clear the review images array after saving
+        reviewImagesArr = [];
+
+        // Calculate average rating from all reviews for this product
+        const allReviews = await ReviewModel.find({ productId: productId });
+        
+        if (allReviews.length > 0) {
+            const totalRating = allReviews.reduce((sum, rev) => {
+                const revRating = typeof rev.rating === 'string' ? parseFloat(rev.rating) : rev.rating;
+                return sum + (revRating || 0);
+            }, 0);
+            
+            const averageRating = totalRating / allReviews.length;
+            
+            // Update product rating
+            await ProductModel.findByIdAndUpdate(productId, {
+                rating: Math.round(averageRating * 10) / 10 // Round to 1 decimal place
+            });
+        }
 
         return response.json({
             message: "Review added successfully",
@@ -936,7 +1027,7 @@ export async function addReview(request, response) {
         
     } catch (error) {
         return response.status(500).json({
-            message: "Something is wrong",
+            message: error.message || "Something is wrong",
             error: true,
             success: false
         })
@@ -948,27 +1039,26 @@ export async function getReviews(request, response) {
     try {
 
         const productId = request.query.productId;
-       
-
-        const reviews = await ReviewModel.find({productId:productId});
-        console.log(reviews)
-
-        if(!reviews){
+        
+        if (!productId) {
             return response.status(400).json({
+                message: "Product ID is required",
                 error: true,
                 success: false
             })
         }
 
+        const reviews = await ReviewModel.find({productId:productId}).sort({ createdAt: -1 });
+
         return response.status(200).json({
             error: false,
             success: true,
-            reviews:reviews
+            reviews: reviews || []
         })
         
     } catch (error) {
         return response.status(500).json({
-            message: "Something is wrong",
+            message: error.message || "Something is wrong",
             error: true,
             success: false
         })
@@ -1000,6 +1090,90 @@ export async function getAllReviews(request, response) {
     } catch (error) {
         return response.status(500).json({
             message: "Something is wrong",
+            error: true,
+            success: false
+        })
+    }
+}
+
+//delete review
+export async function deleteReview(request, response) {
+    try {
+        const userId = request.userId; // from auth middleware
+        const reviewId = request.params.id;
+
+        if (!userId) {
+            return response.status(401).json({
+                message: "Unauthorized. Please login to delete your review.",
+                error: true,
+                success: false
+            })
+        }
+
+        if (!reviewId) {
+            return response.status(400).json({
+                message: "Review ID is required",
+                error: true,
+                success: false
+            })
+        }
+
+        // Find the review
+        const review = await ReviewModel.findById(reviewId);
+
+        if (!review) {
+            return response.status(404).json({
+                message: "Review not found",
+                error: true,
+                success: false
+            })
+        }
+
+        // Check if the review belongs to the user
+        if (review.userId !== userId) {
+            return response.status(403).json({
+                message: "You can only delete your own reviews",
+                error: true,
+                success: false
+            })
+        }
+
+        const productId = review.productId;
+
+        // Delete the review
+        await ReviewModel.findByIdAndDelete(reviewId);
+
+        // Recalculate average rating from remaining reviews
+        const allReviews = await ReviewModel.find({ productId: productId });
+        
+        if (allReviews.length > 0) {
+            const totalRating = allReviews.reduce((sum, rev) => {
+                const revRating = typeof rev.rating === 'string' ? parseFloat(rev.rating) : rev.rating;
+                return sum + (revRating || 0);
+            }, 0);
+            
+            const averageRating = totalRating / allReviews.length;
+            
+            // Update product rating
+            await ProductModel.findByIdAndUpdate(productId, {
+                rating: Math.round(averageRating * 10) / 10 // Round to 1 decimal place
+            });
+        } else {
+            // If no reviews left, set rating to 0
+            await ProductModel.findByIdAndUpdate(productId, {
+                rating: 0
+            });
+        }
+
+        return response.status(200).json({
+            message: "Review deleted successfully",
+            error: false,
+            success: true
+        })
+        
+    } catch (error) {
+        return response.status(500).json({
+            message: error.message || "Something is wrong",
             error: true,
             success: false
         })
