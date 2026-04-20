@@ -1,0 +1,12 @@
+{
+  "name": "VibeFit — Your Confidence Matters",
+  "short_name": "VibeFit",
+  "description": "Modern streetwear & lifestyle clothing from Nepal",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0B0F",
+  "theme_color": "#0B0B0F",
+  "icons": [
+    { "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

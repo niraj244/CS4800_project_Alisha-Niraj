@@ -108,6 +108,24 @@ app.use('/api/logo', logoRouter);
 app.use('/api/payments', paymentRouter);
 app.use('/api/coupon', couponRouter);
 
+// ── Sitemap ────────────────────────────────────────────────────
+app.get('/sitemap.xml', async (_req, res) => {
+    const SITE = process.env.FRONTEND_URLS?.split(',')[0]?.trim() || 'https://vibefit.vercel.app';
+    const staticUrls = ['/', '/shop', '/collections/new-drops', '/collections/bestsellers', '/collections/sale', '/about', '/contact'];
+    let productUrls = [];
+    try {
+        const { default: Product } = await import('./models/product.modal.js');
+        const products = await Product.find({}, 'slug _id updatedAt').lean().limit(500);
+        productUrls = products.map((p) => ({ loc: `/product/${p.slug || p._id}`, lastmod: p.updatedAt?.toISOString().split('T')[0] }));
+    } catch {}
+    const urlTags = [
+        ...staticUrls.map((u) => `  <url><loc>${SITE}${u}</loc><changefreq>weekly</changefreq></url>`),
+        ...productUrls.map((p) => `  <url><loc>${SITE}${p.loc}</loc><lastmod>${p.lastmod}</lastmod><changefreq>weekly</changefreq></url>`),
+    ].join('\n');
+    res.set('Content-Type', 'application/xml');
+    res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urlTags}\n</urlset>`);
+});
+
 // ── Global error handler ───────────────────────────────────────
 app.use((err, _req, res, _next) => {
     const status = err.status || 500;
