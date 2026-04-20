@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: vibefit-api
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      # Fill these in the Render dashboard — do NOT commit real values
+      - key: MONGODB_URI
+        sync: false
+      - key: SECRET_KEY_ACCESS_TOKEN
+        sync: false
+      - key: SECRET_KEY_REFRESH_TOKEN
+        sync: false
+      - key: FRONTEND_URLS
+        sync: false
+      - key: BACKEND_URL
+        sync: false
+      - key: cloudinary_Config_Cloud_Name
+        sync: false
+      - key: cloudinary_Config_api_key
+        sync: false
+      - key: cloudinary_Config_api_secret
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: ESEWA_MERCHANT_ID
+        sync: false
+      - key: ESEWA_SECRET_KEY
+        sync: false
+      - key: ESEWA_ENVIRONMENT
+        value: test
+      - key: KHALTI_PUBLIC_KEY
+        sync: false
+      - key: KHALTI_SECRET_KEY
+        sync: false
+      - key: KHALTI_ENVIRONMENT
+        value: test

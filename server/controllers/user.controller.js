@@ -1,11 +1,12 @@
-import UserModel from '../models/user.model.js'
-import bcryptjs from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+import UserModel from '../models/user.model.js';
+import SubscriberModel from '../models/subscriber.model.js';
+import CouponModel from '../models/coupon.model.js';
+import bcryptjs from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import sendEmailFun from '../config/sendEmail.js';
 import VerificationEmail from '../utils/verifyEmailTemplate.js';
 import generatedAccessToken from '../utils/generatedAccessToken.js';
 import genertedRefreshToken from '../utils/generatedRefreshToken.js';
-
 import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
 import ReviewModel from '../models/reviews.model.js.js';
@@ -18,1262 +19,518 @@ cloudinary.config({
     secure: true,
 });
 
+const BCRYPT_ROUNDS = 12;
 
-export async function registerUserController(request, response) {
+// ─────────────────────────────────────────────────────────────
+// Auth
+// ─────────────────────────────────────────────────────────────
+
+export async function registerUserController(req, res) {
     try {
-        let user;
-
-        const { name, email, password } = request.body;
+        const { name, email, password } = req.body;
         if (!name || !email || !password) {
-            return response.status(400).json({
-                message: "provide email, name, password",
-                error: true,
-                success: false
-            })
+            return res.status(400).json({ message: 'Provide email, name, password', error: true, success: false });
         }
 
-        user = await UserModel.findOne({ email: email });
+        let user = await UserModel.findOne({ email });
 
-        // If user exists and email is verified, return error
-        if (user && user.verify_email === true) {
-            return response.json({
-                message: "User already Registered with this email",
-                error: true,
-                success: false
-            })
+        const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const hashPassword = await bcryptjs.hash(password, BCRYPT_ROUNDS);
+
+        if (user && user.verify_email) {
+            return res.json({ message: 'User already registered with this email', error: true, success: false });
         }
 
-        // If user exists but email is not verified, update OTP and resend email
-        if (user && user.verify_email !== true) {
-            const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
-            const salt = await bcryptjs.genSalt(10);
-            const hashPassword = await bcryptjs.hash(password, salt);
-
+        if (user && !user.verify_email) {
             user.name = name;
             user.password = hashPassword;
             user.otp = verifyCode;
             user.otpExpires = Date.now() + 600000;
             await user.save();
-
-            // Send verification email
-            await sendEmailFun({
-                sendTo: email,
-                subject: "Verify email from Ecommerce App",
-                text: "",
-                html: VerificationEmail(name, verifyCode)
-            })
-
-            // Create a JWT token for verification purposes
-            const token = jwt.sign(
-                { email: user.email, id: user._id },
-                process.env.JSON_WEB_TOKEN_SECRET_KEY
-            );
-
-            return response.status(200).json({
-                success: true,
-                error: false,
-                message: "Verification email sent. Please verify your email.",
-                token: token,
-            });
+        } else {
+            user = await UserModel.create({ email, password: hashPassword, name, otp: verifyCode, otpExpires: Date.now() + 600000 });
         }
 
-        // New user registration
-        const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-        const salt = await bcryptjs.genSalt(10);
-        const hashPassword = await bcryptjs.hash(password, salt);
-
-        user = new UserModel({
-            email: email,
-            password: hashPassword,
-            name: name,
-            otp: verifyCode,
-            otpExpires: Date.now() + 600000,
-
-        });
-
-        await user.save();
-
-        // Send verification email
         await sendEmailFun({
             sendTo: email,
-            subject: "Verify email from Ecommerce App",
-            text: "",
-            html: VerificationEmail(name, verifyCode)
-        })
-
-
-        // Create a JWT token for verification purposes
-        const token = jwt.sign(
-            { email: user.email, id: user._id },
-            process.env.JSON_WEB_TOKEN_SECRET_KEY
-        );
-
-
-        return response.status(200).json({
-            success: true,
-            error: false,
-            message: "User registered successfully! ",
-            token: token, // Optional: include this if needed for verification
+            subject: 'Verify your VibeFit account',
+            text: '',
+            html: VerificationEmail(name, verifyCode),
         });
 
-
-
+        const token = jwt.sign({ email: user.email, id: user._id }, process.env.SECRET_KEY_ACCESS_TOKEN);
+        return res.status(200).json({ success: true, error: false, message: 'Verification email sent. Please verify your email.', token });
     } catch (error) {
-        return response.status(500).json({
-            message: error.message || error,
-            error: true,
-            success: false
-        })
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
     }
 }
 
-export async function verifyEmailController(request, response) {
+export async function verifyEmailController(req, res) {
     try {
-        const { email, otp } = request.body;
+        const { email, otp } = req.body;
+        const user = await UserModel.findOne({ email });
+        if (!user) return res.status(400).json({ error: true, success: false, message: 'User not found' });
 
-        const user = await UserModel.findOne({ email: email });
-        if (!user) {
-            return response.status(400).json({ error: true, success: false, message: "User not found" });
-        }
+        if (user.otp !== otp) return res.status(400).json({ error: true, success: false, message: 'Invalid OTP' });
+        if (user.otpExpires < Date.now()) return res.status(400).json({ error: true, success: false, message: 'OTP expired' });
 
-        const isCodeValid = user.otp === otp;
-        const isNotExpired = user.otpExpires > Date.now();
-
-        if (isCodeValid && isNotExpired) {
-            user.verify_email = true;
-            user.otp = null;
-            user.otpExpires = null;
-            await user.save();
-            return response.status(200).json({ error: false, success: true, message: "Email verified successfully" });
-        } else if (!isCodeValid) {
-            return response.status(400).json({ error: true, success: false, message: "Invalid OTP" });
-        } else {
-            return response.status(400).json({ error: true, success: false, message: "OTP expired" });
-        }
-
+        user.verify_email = true;
+        user.otp = null;
+        user.otpExpires = null;
+        await user.save();
+        return res.status(200).json({ error: false, success: true, message: 'Email verified successfully' });
     } catch (error) {
-        return response.status(500).json({
-            message: error.message || error,
-            error: true,
-            success: false
-        })
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
     }
 }
 
-// Resend OTP for email verification
-export async function resendOtpController(request, response) {
+export async function resendOtpController(req, res) {
     try {
-        const { email } = request.body;
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ message: 'Email is required', error: true, success: false });
 
-        if (!email) {
-            return response.status(400).json({
-                message: "Email is required",
-                error: true,
-                success: false
-            })
-        }
+        const user = await UserModel.findOne({ email });
+        if (!user) return res.status(400).json({ message: 'User not found', error: true, success: false });
+        if (user.verify_email) return res.status(400).json({ message: 'Email is already verified', error: true, success: false });
 
-        const user = await UserModel.findOne({ email: email });
-
-        if (!user) {
-            return response.status(400).json({
-                message: "User not found",
-                error: true,
-                success: false
-            })
-        }
-
-        if (user.verify_email === true) {
-            return response.status(400).json({
-                message: "Email is already verified",
-                error: true,
-                success: false
-            })
-        }
-
-        // Generate new OTP
         const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
         user.otp = verifyCode;
         user.otpExpires = Date.now() + 600000;
         await user.save();
 
-        // Send verification email
-        await sendEmailFun({
-            sendTo: email,
-            subject: "Verify email from Ecommerce App",
-            text: "",
-            html: VerificationEmail(user.name, verifyCode)
-        })
-
-        return response.status(200).json({
-            message: "OTP sent successfully to your email",
-            error: false,
-            success: true
-        })
-
+        await sendEmailFun({ sendTo: email, subject: 'Your VibeFit OTP', text: '', html: VerificationEmail(user.name, verifyCode) });
+        return res.status(200).json({ message: 'OTP sent successfully', error: false, success: true });
     } catch (error) {
-        return response.status(500).json({
-            message: error.message || error,
-            error: true,
-            success: false
-        })
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
     }
 }
 
-
-export async function authWithGoogle(request, response) {
-    const { name, email, password, avatar, mobile, role } = request.body;
-
+export async function authWithGoogle(req, res) {
     try {
-        const existingUser = await UserModel.findOne({ email: email });
-
-        if (!existingUser) {
-            const user = await UserModel.create({
-                name: name,
-                mobile: mobile,
-                email: email,
-                password: "null",
-                avatar: avatar,
-                role: role,
-                verify_email: true,
-                signUpWithGoogle: true
-            });
-
-            await user.save();
-
-            const accesstoken = await generatedAccessToken(user._id);
-            const refreshToken = await genertedRefreshToken(user._id);
-
-            await UserModel.findByIdAndUpdate(user?._id, {
-                last_login_date: new Date()
-            })
-
-
-            const cookiesOption = {
-                httpOnly: true,
-                secure: true,
-                sameSite: "None"
-            }
-            response.cookie('accessToken', accesstoken, cookiesOption)
-            response.cookie('refreshToken', refreshToken, cookiesOption)
-
-
-            return response.json({
-                message: "Login successfully",
-                error: false,
-                success: true,
-                data: {
-                    accesstoken,
-                    refreshToken
-                }
-            })
-
-        } else {
-            const accesstoken = await generatedAccessToken(existingUser._id);
-            const refreshToken = await genertedRefreshToken(existingUser._id);
-
-            await UserModel.findByIdAndUpdate(existingUser?._id, {
-                last_login_date: new Date()
-            })
-
-
-            const cookiesOption = {
-                httpOnly: true,
-                secure: true,
-                sameSite: "None"
-            }
-            response.cookie('accessToken', accesstoken, cookiesOption)
-            response.cookie('refreshToken', refreshToken, cookiesOption)
-
-
-            return response.json({
-                message: "Login successfully",
-                error: false,
-                success: true,
-                data: {
-                    accesstoken,
-                    refreshToken
-                }
-            })
-        }
-
-    } catch (error) {
-        return response.status(500).json({
-            message: error.message || error,
-            error: true,
-            success: false
-        })
-    }
-
-
-}
-
-
-export async function loginUserController(request, response) {
-    try {
-        const { email, password } = request.body;
-
-        const user = await UserModel.findOne({ email: email });
+        const { name, email, password, avatar, mobile, role } = req.body;
+        let user = await UserModel.findOne({ email });
 
         if (!user) {
-            return response.status(400).json({
-                message: "User not register",
-                error: true,
-                success: false
-            })
-        }
-
-        if (user.status !== "Active") {
-            return response.status(400).json({
-                message: "Contact to admin",
-                error: true,
-                success: false
-            })
-        }
-
-        const checkPassword = await bcryptjs.compare(password, user.password);
-
-        if (!checkPassword) {
-            return response.status(400).json({
-                message: "Check your password",
-                error: true,
-                success: false
-            })
-        }
-
-        // If email is not verified, generate new OTP and send it
-        if (user.verify_email !== true) {
-            const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
-            user.otp = verifyCode;
-            user.otpExpires = Date.now() + 600000;
-            await user.save();
-
-            // Send verification email
-            await sendEmailFun({
-                sendTo: email,
-                subject: "Verify email from Ecommerce App",
-                text: "",
-                html: VerificationEmail(user.name, verifyCode)
-            })
-
-            const accesstoken = await generatedAccessToken(user._id);
-            const refreshToken = await genertedRefreshToken(user._id);
-
-            const updateUser = await UserModel.findByIdAndUpdate(user?._id, {
-                last_login_date: new Date()
-            })
-
-            const cookiesOption = {
-                httpOnly: true,
-                secure: true,
-                sameSite: "None"
-            }
-            response.cookie('accessToken', accesstoken, cookiesOption)
-            response.cookie('refreshToken', refreshToken, cookiesOption)
-
-            return response.json({
-                message: "Login successfully. Please verify your email.",
-                error: false,
-                success: true,
-                needsVerification: true,
-                data: {
-                    accesstoken,
-                    refreshToken
-                }
-            })
+            user = await UserModel.create({ name, mobile, email, password: 'null', avatar, role, verify_email: true, signUpWithGoogle: true });
         }
 
         const accesstoken = await generatedAccessToken(user._id);
         const refreshToken = await genertedRefreshToken(user._id);
+        await UserModel.findByIdAndUpdate(user._id, { last_login_date: new Date() });
 
-        const updateUser = await UserModel.findByIdAndUpdate(user?._id, {
-            last_login_date: new Date()
-        })
+        const cookiesOption = { httpOnly: true, secure: true, sameSite: 'None' };
+        res.cookie('accessToken', accesstoken, cookiesOption);
+        res.cookie('refreshToken', refreshToken, cookiesOption);
 
-
-        const cookiesOption = {
-            httpOnly: true,
-            secure: true,
-            sameSite: "None"
-        }
-        response.cookie('accessToken', accesstoken, cookiesOption)
-        response.cookie('refreshToken', refreshToken, cookiesOption)
-
-
-        return response.json({
-            message: "Login successfully",
-            error: false,
-            success: true,
-            data: {
-                accesstoken,
-                refreshToken
-            }
-        })
+        return res.json({ message: 'Login successfully', error: false, success: true, data: { accesstoken, refreshToken } });
     } catch (error) {
-        return response.status(500).json({
-            message: error.message || error,
-            error: true,
-            success: false
-        })
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
     }
-
 }
 
-
-
-//logout controller
-export async function logoutController(request, response) {
+export async function loginUserController(req, res) {
     try {
-        const userid = request.userId //middleware
+        const { email, password } = req.body;
+        const user = await UserModel.findOne({ email });
 
-        const cookiesOption = {
-            httpOnly: true,
-            secure: true,
-            sameSite: "None"
-        }
+        if (!user) return res.status(400).json({ message: 'User not registered', error: true, success: false });
+        if (user.status !== 'Active') return res.status(400).json({ message: 'Account suspended, contact support', error: true, success: false });
 
-        response.clearCookie("accessToken", cookiesOption)
-        response.clearCookie("refreshToken", cookiesOption)
+        const checkPassword = await bcryptjs.compare(password, user.password);
+        if (!checkPassword) return res.status(400).json({ message: 'Incorrect password', error: true, success: false });
 
-        const removeRefreshToken = await UserModel.findByIdAndUpdate(userid, {
-            refresh_token: ""
-        })
-
-        return response.json({
-            message: "Logout successfully",
-            error: false,
-            success: true
-        })
-    } catch (error) {
-        return response.status(500).json({
-            message: error.message || error,
-            error: true,
-            success: false
-        })
-    }
-}
-
-
-//image upload
-var imagesArr = [];
-export async function userAvatarController(request, response) {
-    try {
-        imagesArr = [];
-
-        const userId = request.userId;  //auth middleware
-        const image = request.files;
-
-
-        const user = await UserModel.findOne({ _id: userId });
-
-        if (!user) {
-            return response.status(500).json({
-                message: "User not found",
-                error: true,
-                success: false
-            })
-        }
-
-
-
-
-        //first remove image from cloudinary
-        const imgUrl = user.avatar;
-
-        const urlArr = imgUrl.split("/");
-        const avatar_image = urlArr[urlArr.length - 1];
-
-        const imageName = avatar_image.split(".")[0];
-
-        if (imageName) {
-            const res = await cloudinary.uploader.destroy(
-                imageName,
-                (error, result) => {
-                    // console.log(error, res)
-                }
-            );
-        }
-
-        const options = {
-            use_filename: true,
-            unique_filename: false,
-            overwrite: false,
-        };
-
-        for (let i = 0; i < image?.length; i++) {
-
-            const img = await cloudinary.uploader.upload(
-                image[i].path,
-                options,
-                function (error, result) {
-                    imagesArr.push(result.secure_url);
-                    fs.unlinkSync(`uploads/${request.files[i].filename}`);
-                }
-            );
-        }
-
-        user.avatar = imagesArr[0];
-        await user.save();
-
-        return response.status(200).json({
-            _id: userId,
-            avtar: imagesArr[0]
-        });
-
-    } catch (error) {
-        return response.status(500).json({
-            message: error.message || error,
-            error: true,
-            success: false
-        })
-    }
-}
-
-export async function removeImageFromCloudinary(request, response) {
-    const imgUrl = request.query.img;
-
-    const urlArr = imgUrl.split("/");
-    const image = urlArr[urlArr.length - 1];
-
-    const imageName = image.split(".")[0];
-
-    if (imageName) {
-        const res = await cloudinary.uploader.destroy(
-            imageName,
-            (error, result) => {
-                // console.log(error, res)
-            }
-        );
-
-        if (res) {
-            response.status(200).send(res);
-        }
-    }
-
-}
-
-//update user details
-export async function updateUserDetails(request, response) {
-    try {
-        const userId = request.userId //auth middleware
-        const { name, email, mobile, password } = request.body;
-
-        const userExist = await UserModel.findById(userId);
-        if (!userExist)
-            return response.status(400).send('The user cannot be Updated!');
-
-
-        const updateUser = await UserModel.findByIdAndUpdate(
-            userId,
-            {
-                name: name,
-                mobile: mobile,
-                email: email,
-            },
-            { new: true }
-        )
-
-
-
-        return response.json({
-            message: "User Updated successfully",
-            error: false,
-            success: true,
-            user: {
-                name: updateUser?.name,
-                _id: updateUser?._id,
-                email: updateUser?.email,
-                mobile: updateUser?.mobile,
-                avatar: updateUser?.avatar
-            }
-        })
-
-    } catch (error) {
-        return response.status(500).json({
-            message: error.message || error,
-            error: true,
-            success: false
-        })
-    }
-}
-
-//forgot password
-export async function forgotPasswordController(request, response) {
-    try {
-        const { email } = request.body
-
-        const user = await UserModel.findOne({ email: email })
-
-        if (!user) {
-            return response.status(400).json({
-                message: "Email not available",
-                error: true,
-                success: false
-            })
-        }
-
-        else {
-            let verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
-
+        if (!user.verify_email) {
+            const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
             user.otp = verifyCode;
             user.otpExpires = Date.now() + 600000;
-
             await user.save();
-
-            await sendEmailFun({
-                sendTo: email,
-                subject: "Verify OTP from Ecommerce App",
-                text: "",
-                html: VerificationEmail(user.name, verifyCode)
-            })
-
-
-            return response.json({
-                message: "check your email",
-                error: false,
-                success: true
-            })
-
+            await sendEmailFun({ sendTo: email, subject: 'Verify your VibeFit account', text: '', html: VerificationEmail(user.name, verifyCode) });
         }
 
+        const accesstoken = await generatedAccessToken(user._id);
+        const refreshToken = await genertedRefreshToken(user._id);
+        await UserModel.findByIdAndUpdate(user._id, { last_login_date: new Date() });
 
+        const cookiesOption = { httpOnly: true, secure: true, sameSite: 'None' };
+        res.cookie('accessToken', accesstoken, cookiesOption);
+        res.cookie('refreshToken', refreshToken, cookiesOption);
 
-    } catch (error) {
-        return response.status(500).json({
-            message: error.message || error,
-            error: true,
-            success: false
-        })
-    }
-}
-
-
-export async function verifyForgotPasswordOtp(request, response) {
-    try {
-        const { email, otp } = request.body;
-
-        const user = await UserModel.findOne({ email: email })
-
-        console.log(user)
-
-        if (!user) {
-            return response.status(400).json({
-                message: "Email not available",
-                error: true,
-                success: false
-            })
-        }
-
-        if (!email || !otp) {
-            return response.status(400).json({
-                message: "Provide required field email, otp.",
-                error: true,
-                success: false
-            })
-        }
-
-        if (otp !== user.otp) {
-            return response.status(400).json({
-                message: "Invailid OTP",
-                error: true,
-                success: false
-            })
-        }
-
-
-        const currentTime = new Date().toISOString()
-
-        if (user.otpExpires < currentTime) {
-            return response.status(400).json({
-                message: "Otp is expired",
-                error: true,
-                success: false
-            })
-        }
-
-
-        user.otp = "";
-        user.otpExpires = "";
-
-        await user.save();
-
-        return response.status(200).json({
-            message: "Verify OTP successfully",
-            error: false,
-            success: true
-        })
-    } catch (error) {
-        return response.status(500).json({
-            message: error.message || error,
-            error: true,
-            success: false
-        })
-    }
-
-}
-
-
-//reset password
-export async function resetpassword(request, response) {
-    try {
-        const { email, oldPassword, newPassword, confirmPassword } = request.body;
-        if (!email || !newPassword || !confirmPassword) {
-            return response.status(400).json({
-                error: true,
-                success: false,
-                message: "provide required fields email, newPassword, confirmPassword"
-            })
-        }
-
-        const user = await UserModel.findOne({ email });
-        if (!user) {
-            return response.status(400).json({
-                message: "Email is not available",
-                error: true,
-                success: false
-            })
-        }
-
-
-        if (user?.signUpWithGoogle === false) {
-            const checkPassword = await bcryptjs.compare(oldPassword, user.password);
-            if (!checkPassword) {
-                return response.status(400).json({
-                    message: "your old password is wrong",
-                    error: true,
-                    success: false,
-                })
-            }
-        }
-
-
-        if (newPassword !== confirmPassword) {
-            return response.status(400).json({
-                message: "newPassword and confirmPassword must be same.",
-                error: true,
-                success: false,
-            })
-        }
-
-        const salt = await bcryptjs.genSalt(10);
-        const hashPassword = await bcryptjs.hash(confirmPassword, salt);
-
-        user.password = hashPassword;
-        user.signUpWithGoogle = false;
-        await user.save();
-
-        return response.json({
-            message: "Password updated successfully.",
-            error: false,
-            success: true
-        })
-
-
-    } catch (error) {
-        return response.status(500).json({
-            message: error.message || error,
-            error: true,
-            success: false
-        })
-    }
-}
-
-
-
-//change password
-export async function changePasswordController(request, response) {
-    try {
-        const { email, newPassword, confirmPassword } = request.body;
-        if (!email || !newPassword || !confirmPassword) {
-            return response.status(400).json({
-                error: true,
-                success: false,
-                message: "provide required fields email, newPassword, confirmPassword"
-            })
-        }
-
-        const user = await UserModel.findOne({ email });
-        if (!user) {
-            return response.status(400).json({
-                message: "Email is not available",
-                error: true,
-                success: false
-            })
-        }
-
-
-        if (newPassword !== confirmPassword) {
-            return response.status(400).json({
-                message: "newPassword and confirmPassword must be same.",
-                error: true,
-                success: false,
-            })
-        }
-
-        const salt = await bcryptjs.genSalt(10);
-        const hashPassword = await bcryptjs.hash(confirmPassword, salt);
-
-        user.password = hashPassword;
-        user.signUpWithGoogle = false;
-        await user.save();
-
-        return response.json({
-            message: "Password updated successfully.",
-            error: false,
-            success: true
-        })
-
-
-    } catch (error) {
-        return response.status(500).json({
-            message: error.message || error,
-            error: true,
-            success: false
-        })
-    }
-}
-
-
-//refresh token controler
-export async function refreshToken(request, response) {
-    try {
-        const refreshToken = request.cookies.refreshToken || request?.headers?.authorization?.split(" ")[1]  /// [ Bearer token]
-
-        if (!refreshToken) {
-            return response.status(401).json({
-                message: "Invalid token",
-                error: true,
-                success: false
-            })
-        }
-
-
-        const verifyToken = await jwt.verify(refreshToken, process.env.SECRET_KEY_REFRESH_TOKEN)
-        if (!verifyToken) {
-            return response.status(401).json({
-                message: "token is expired",
-                error: true,
-                success: false
-            })
-        }
-
-        const userId = verifyToken?._id;
-        const newAccessToken = await generatedAccessToken(userId)
-
-        const cookiesOption = {
-            httpOnly: true,
-            secure: true,
-            sameSite: "None"
-        }
-
-        response.cookie('accessToken', newAccessToken, cookiesOption)
-
-        return response.json({
-            message: "New Access token generated",
+        return res.json({
+            message: user.verify_email ? 'Login successfully' : 'Login successfully. Please verify your email.',
             error: false,
             success: true,
-            data: {
-                accessToken: newAccessToken
-            }
-        })
-
-    } catch (error) {
-        return response.status(500).json({
-            message: error.message || error,
-            error: true,
-            success: false
-        })
-    }
-}
-
-
-//get login user details
-export async function userDetails(request, response) {
-    try {
-        const userId = request.userId
-
-        const user = await UserModel.findById(userId).select('-password -refresh_token').populate('address_details')
-
-        return response.json({
-            message: 'user details',
-            data: user,
-            error: false,
-            success: true
-        })
-    } catch (error) {
-        return response.status(500).json({
-            message: "Something is wrong",
-            error: true,
-            success: false
-        })
-    }
-}
-
-
-//upload review images
-var reviewImagesArr = [];
-export async function uploadReviewImages(request, response) {
-    try {
-        reviewImagesArr = [];
-
-        const image = request.files;
-
-        const options = {
-            use_filename: true,
-            unique_filename: false,
-            overwrite: false,
-        };
-
-        for (let i = 0; i < image?.length; i++) {
-
-            const img = await cloudinary.uploader.upload(
-                image[i].path,
-                options,
-                function (error, result) {
-                    reviewImagesArr.push(result.secure_url);
-                    fs.unlinkSync(`uploads/${request.files[i].filename}`);
-                }
-            );
-        }
-
-        return response.status(200).json({
-            images: reviewImagesArr
+            needsVerification: !user.verify_email,
+            data: { accesstoken, refreshToken },
         });
-
     } catch (error) {
-        return response.status(500).json({
-            message: error.message || error,
-            error: true,
-            success: false
-        })
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
     }
 }
 
-//review controller
-export async function addReview(request, response) {
+export async function logoutController(req, res) {
     try {
+        const cookiesOption = { httpOnly: true, secure: true, sameSite: 'None' };
+        res.clearCookie('accessToken', cookiesOption);
+        res.clearCookie('refreshToken', cookiesOption);
+        await UserModel.findByIdAndUpdate(req.userId, { refresh_token: '' });
+        return res.json({ message: 'Logout successfully', error: false, success: true });
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
+    }
+}
 
-        const {image, userName, review, rating, userId, productId, reviewImages} = request.body;
+export async function refreshToken(req, res) {
+    try {
+        const token = req.cookies.refreshToken || req?.headers?.authorization?.split(' ')[1];
+        if (!token) return res.status(401).json({ message: 'Invalid token', error: true, success: false });
 
-        // Validate required fields
+        const verifyToken = jwt.verify(token, process.env.SECRET_KEY_REFRESH_TOKEN);
+        if (!verifyToken) return res.status(401).json({ message: 'Token expired', error: true, success: false });
+
+        const newAccessToken = await generatedAccessToken(verifyToken._id);
+        res.cookie('accessToken', newAccessToken, { httpOnly: true, secure: true, sameSite: 'None' });
+
+        return res.json({ message: 'New access token generated', error: false, success: true, data: { accessToken: newAccessToken } });
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
+    }
+}
+
+export async function userDetails(req, res) {
+    try {
+        const user = await UserModel.findById(req.userId).select('-password -refresh_token').populate('address_details');
+        return res.json({ message: 'user details', data: user, error: false, success: true });
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Password management
+// ─────────────────────────────────────────────────────────────
+
+export async function forgotPasswordController(req, res) {
+    try {
+        const { email } = req.body;
+        const user = await UserModel.findOne({ email });
+        if (!user) return res.status(400).json({ message: 'Email not found', error: true, success: false });
+
+        const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
+        user.otp = verifyCode;
+        user.otpExpires = Date.now() + 600000;
+        await user.save();
+
+        await sendEmailFun({ sendTo: email, subject: 'Reset your VibeFit password', text: '', html: VerificationEmail(user.name, verifyCode) });
+        return res.json({ message: 'Check your email', error: false, success: true });
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
+    }
+}
+
+export async function verifyForgotPasswordOtp(req, res) {
+    try {
+        const { email, otp } = req.body;
+        if (!email || !otp) return res.status(400).json({ message: 'Provide email and OTP', error: true, success: false });
+
+        const user = await UserModel.findOne({ email });
+        if (!user) return res.status(400).json({ message: 'Email not found', error: true, success: false });
+        if (user.otp !== otp) return res.status(400).json({ message: 'Invalid OTP', error: true, success: false });
+        if (user.otpExpires < new Date()) return res.status(400).json({ message: 'OTP expired', error: true, success: false });
+
+        user.otp = '';
+        user.otpExpires = null;
+        await user.save();
+        return res.status(200).json({ message: 'OTP verified', error: false, success: true });
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
+    }
+}
+
+export async function resetpassword(req, res) {
+    try {
+        const { email, oldPassword, newPassword, confirmPassword } = req.body;
+        if (!email || !newPassword || !confirmPassword) {
+            return res.status(400).json({ error: true, success: false, message: 'Provide email, newPassword, confirmPassword' });
+        }
+
+        const user = await UserModel.findOne({ email });
+        if (!user) return res.status(400).json({ message: 'Email not found', error: true, success: false });
+
+        if (!user.signUpWithGoogle) {
+            const checkPassword = await bcryptjs.compare(oldPassword, user.password);
+            if (!checkPassword) return res.status(400).json({ message: 'Old password is wrong', error: true, success: false });
+        }
+
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({ message: 'Passwords do not match', error: true, success: false });
+        }
+
+        user.password = await bcryptjs.hash(confirmPassword, BCRYPT_ROUNDS);
+        user.signUpWithGoogle = false;
+        await user.save();
+        return res.json({ message: 'Password updated', error: false, success: true });
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
+    }
+}
+
+export async function changePasswordController(req, res) {
+    try {
+        const { email, newPassword, confirmPassword } = req.body;
+        if (!email || !newPassword || !confirmPassword) {
+            return res.status(400).json({ error: true, success: false, message: 'Provide email, newPassword, confirmPassword' });
+        }
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({ message: 'Passwords do not match', error: true, success: false });
+        }
+
+        const user = await UserModel.findOne({ email });
+        if (!user) return res.status(400).json({ message: 'Email not found', error: true, success: false });
+
+        user.password = await bcryptjs.hash(confirmPassword, BCRYPT_ROUNDS);
+        await user.save();
+        return res.json({ message: 'Password updated', error: false, success: true });
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Profile / Avatar  — fixed race condition: local array per request
+// ─────────────────────────────────────────────────────────────
+
+export async function userAvatarController(req, res) {
+    try {
+        const userId = req.userId;
+        const images = req.files;
+        const user = await UserModel.findById(userId);
+        if (!user) return res.status(404).json({ message: 'User not found', error: true, success: false });
+
+        // Delete existing avatar from Cloudinary
+        if (user.avatar) {
+            try {
+                const urlParts = user.avatar.split('/');
+                const publicId = urlParts[urlParts.length - 1].split('.')[0];
+                if (publicId) await cloudinary.uploader.destroy(publicId);
+            } catch (_) {}
+        }
+
+        const uploadedUrls = [];
+        for (let i = 0; i < images?.length; i++) {
+            const result = await cloudinary.uploader.upload(images[i].path, { use_filename: true, unique_filename: false, overwrite: false });
+            uploadedUrls.push(result.secure_url);
+            try { fs.unlinkSync(images[i].path); } catch (_) {}
+        }
+
+        user.avatar = uploadedUrls[0] || user.avatar;
+        await user.save();
+        return res.status(200).json({ _id: userId, avatar: uploadedUrls[0] });
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
+    }
+}
+
+export async function removeImageFromCloudinary(req, res) {
+    try {
+        const imgUrl = req.query.img;
+        if (!imgUrl) return res.status(400).json({ message: 'Image URL required' });
+
+        const urlParts = imgUrl.split('/');
+        const publicId = urlParts[urlParts.length - 1].split('.')[0];
+        if (publicId) {
+            const result = await cloudinary.uploader.destroy(publicId);
+            return res.status(200).json(result);
+        }
+        return res.status(400).json({ message: 'Could not extract public_id' });
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
+    }
+}
+
+export async function updateUserDetails(req, res) {
+    try {
+        const { name, email, mobile } = req.body;
+        const updated = await UserModel.findByIdAndUpdate(
+            req.userId,
+            { name, mobile, email },
+            { new: true }
+        );
+        if (!updated) return res.status(404).json({ message: 'User not found', error: true, success: false });
+
+        return res.json({
+            message: 'User updated successfully',
+            error: false,
+            success: true,
+            user: { name: updated.name, _id: updated._id, email: updated.email, mobile: updated.mobile, avatar: updated.avatar },
+        });
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Reviews — fixed race condition: local array per request
+// ─────────────────────────────────────────────────────────────
+
+export async function uploadReviewImages(req, res) {
+    try {
+        const images = req.files;
+        const uploadedUrls = [];
+
+        for (let i = 0; i < images?.length; i++) {
+            const result = await cloudinary.uploader.upload(images[i].path, { use_filename: true, unique_filename: false, overwrite: false });
+            uploadedUrls.push(result.secure_url);
+            try { fs.unlinkSync(images[i].path); } catch (_) {}
+        }
+
+        return res.status(200).json({ images: uploadedUrls });
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
+    }
+}
+
+export async function addReview(req, res) {
+    try {
+        const { image, userName, review, rating, userId, productId, reviewImages } = req.body;
         if (!review || !rating || !userId || !productId) {
-            return response.status(400).json({
-                message: "Please provide all required fields",
-                error: true,
-                success: false
-            })
+            return res.status(400).json({ message: 'Provide all required fields', error: true, success: false });
         }
 
-        // Convert rating to number if it's a string
-        const ratingNumber = typeof rating === 'string' ? parseFloat(rating) : rating;
-
-        // Validate rating is between 0 and 5
+        const ratingNumber = parseFloat(rating);
         if (isNaN(ratingNumber) || ratingNumber < 0 || ratingNumber > 5) {
-            return response.status(400).json({
-                message: "Rating must be a number between 0 and 5",
-                error: true,
-                success: false
-            })
+            return res.status(400).json({ message: 'Rating must be 0–5', error: true, success: false });
         }
 
-        // Handle reviewImages - can be array or single string
-        let reviewImagesArray = [];
-        if (reviewImages) {
-            if (Array.isArray(reviewImages)) {
-                reviewImagesArray = reviewImages;
-            } else {
-                reviewImagesArray = [reviewImages];
-            }
-        }
+        const reviewImagesArray = Array.isArray(reviewImages) ? reviewImages : reviewImages ? [reviewImages] : [];
 
-        const userReview = new ReviewModel({
-            image:image || '',
-            userName:userName || '',
-            review:review,
-            rating:ratingNumber,
-            userId:userId,
-            productId:productId,
-            reviewImages: reviewImagesArray
-        })
+        await ReviewModel.create({ image: image || '', userName: userName || '', review, rating: ratingNumber, userId, productId, reviewImages: reviewImagesArray });
 
-        await userReview.save();
-        
-        // Clear the review images array after saving
-        reviewImagesArr = [];
+        const allReviews = await ReviewModel.find({ productId });
+        const avg = allReviews.reduce((s, r) => s + parseFloat(r.rating), 0) / allReviews.length;
+        await ProductModel.findByIdAndUpdate(productId, { rating: Math.round(avg * 10) / 10 });
 
-        // Calculate average rating from all reviews for this product
-        const allReviews = await ReviewModel.find({ productId: productId });
-        
-        if (allReviews.length > 0) {
-            const totalRating = allReviews.reduce((sum, rev) => {
-                const revRating = typeof rev.rating === 'string' ? parseFloat(rev.rating) : rev.rating;
-                return sum + (revRating || 0);
-            }, 0);
-            
-            const averageRating = totalRating / allReviews.length;
-            
-            // Update product rating
-            await ProductModel.findByIdAndUpdate(productId, {
-                rating: Math.round(averageRating * 10) / 10 // Round to 1 decimal place
-            });
-        }
-
-        return response.json({
-            message: "Review added successfully",
-            error: false,
-            success: true
-        })
-        
+        return res.json({ message: 'Review added', error: false, success: true });
     } catch (error) {
-        return response.status(500).json({
-            message: error.message || "Something is wrong",
-            error: true,
-            success: false
-        })
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
     }
 }
 
-//get reviews
-export async function getReviews(request, response) {
+export async function getReviews(req, res) {
     try {
+        const { productId } = req.query;
+        if (!productId) return res.status(400).json({ message: 'Product ID required', error: true, success: false });
 
-        const productId = request.query.productId;
-        
-        if (!productId) {
-            return response.status(400).json({
-                message: "Product ID is required",
-                error: true,
-                success: false
-            })
-        }
-
-        const reviews = await ReviewModel.find({productId:productId}).sort({ createdAt: -1 });
-
-        return response.status(200).json({
-            error: false,
-            success: true,
-            reviews: reviews || []
-        })
-        
+        const reviews = await ReviewModel.find({ productId }).sort({ createdAt: -1 });
+        return res.status(200).json({ error: false, success: true, reviews: reviews || [] });
     } catch (error) {
-        return response.status(500).json({
-            message: error.message || "Something is wrong",
-            error: true,
-            success: false
-        })
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
     }
 }
 
-
-
-
-//get all reviews
-export async function getAllReviews(request, response) {
-    try {      
-
+export async function getAllReviews(req, res) {
+    try {
         const reviews = await ReviewModel.find();
-
-        if(!reviews){
-            return response.status(400).json({
-                error: true,
-                success: false
-            })
-        }
-
-        return response.status(200).json({
-            error: false,
-            success: true,
-            reviews:reviews
-        })
-        
+        return res.status(200).json({ error: false, success: true, reviews });
     } catch (error) {
-        return response.status(500).json({
-            message: "Something is wrong",
-            error: true,
-            success: false
-        })
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
     }
 }
 
-//delete review
-export async function deleteReview(request, response) {
+export async function deleteReview(req, res) {
     try {
-        const userId = request.userId; // from auth middleware
-        const reviewId = request.params.id;
-
-        if (!userId) {
-            return response.status(401).json({
-                message: "Unauthorized. Please login to delete your review.",
-                error: true,
-                success: false
-            })
-        }
-
-        if (!reviewId) {
-            return response.status(400).json({
-                message: "Review ID is required",
-                error: true,
-                success: false
-            })
-        }
-
-        // Find the review
-        const review = await ReviewModel.findById(reviewId);
-
-        if (!review) {
-            return response.status(404).json({
-                message: "Review not found",
-                error: true,
-                success: false
-            })
-        }
-
-        // Check if the review belongs to the user
-        if (review.userId !== userId) {
-            return response.status(403).json({
-                message: "You can only delete your own reviews",
-                error: true,
-                success: false
-            })
-        }
+        const review = await ReviewModel.findById(req.params.id);
+        if (!review) return res.status(404).json({ message: 'Review not found', error: true, success: false });
+        if (review.userId !== req.userId) return res.status(403).json({ message: 'You can only delete your own reviews', error: true, success: false });
 
         const productId = review.productId;
+        await ReviewModel.findByIdAndDelete(req.params.id);
 
-        // Delete the review
-        await ReviewModel.findByIdAndDelete(reviewId);
+        const remaining = await ReviewModel.find({ productId });
+        const avg = remaining.length > 0 ? remaining.reduce((s, r) => s + parseFloat(r.rating), 0) / remaining.length : 0;
+        await ProductModel.findByIdAndUpdate(productId, { rating: Math.round(avg * 10) / 10 });
 
-        // Recalculate average rating from remaining reviews
-        const allReviews = await ReviewModel.find({ productId: productId });
-        
-        if (allReviews.length > 0) {
-            const totalRating = allReviews.reduce((sum, rev) => {
-                const revRating = typeof rev.rating === 'string' ? parseFloat(rev.rating) : rev.rating;
-                return sum + (revRating || 0);
-            }, 0);
-            
-            const averageRating = totalRating / allReviews.length;
-            
-            // Update product rating
-            await ProductModel.findByIdAndUpdate(productId, {
-                rating: Math.round(averageRating * 10) / 10 // Round to 1 decimal place
-            });
-        } else {
-            // If no reviews left, set rating to 0
-            await ProductModel.findByIdAndUpdate(productId, {
-                rating: 0
-            });
-        }
-
-        return response.status(200).json({
-            message: "Review deleted successfully",
-            error: false,
-            success: true
-        })
-        
+        return res.status(200).json({ message: 'Review deleted', error: false, success: true });
     } catch (error) {
-        return response.status(500).json({
-            message: error.message || "Something is wrong",
-            error: true,
-            success: false
-        })
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
     }
 }
 
+// ─────────────────────────────────────────────────────────────
+// Admin: all users
+// ─────────────────────────────────────────────────────────────
 
-//get all users
-export async function getAllUsers(request, response) {
+export async function getAllUsers(req, res) {
     try {
-        const { page, limit } = request.query;
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, parseInt(req.query.limit) || 20);
 
-        const totalUsers = await UserModel.find();
+        const [users, total, totalUsersCount] = await Promise.all([
+            UserModel.find().sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit),
+            UserModel.countDocuments(),
+            UserModel.countDocuments(),
+        ]);
 
-        const users = await UserModel.find().sort({ createdAt: -1 }).skip((page - 1) * limit).limit(parseInt(limit));
-
-        const total = await UserModel.countDocuments(users);
-
-        if(!users){
-            return response.status(400).json({
-                error: true,
-                success: false
-            })
-        }
-
-        return response.status(200).json({
-            error: false,
-            success: true,
-            users:users,
-            total: total,
-            page: parseInt(page),
-            totalPages: Math.ceil(total / limit),
-            totalUsersCount:totalUsers?.length,
-            totalUsers:totalUsers
-        })
-        
+        return res.status(200).json({ error: false, success: true, users, total, page, totalPages: Math.ceil(total / limit), totalUsersCount });
     } catch (error) {
-        return response.status(500).json({
-            message: "Something is wrong",
-            error: true,
-            success: false
-        })
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
     }
 }
 
-
-
-export async function deleteUser(request, response) {
-    const user = await UserModel.findById(request.params.id);
-
-    if (!user) {
-        return response.status(404).json({
-            message: "User Not found",
-            error: true,
-            success: false
-        })
+export async function deleteUser(req, res) {
+    try {
+        const deleted = await UserModel.findByIdAndDelete(req.params.id);
+        if (!deleted) return res.status(404).json({ message: 'User not found', error: true, success: false });
+        return res.status(200).json({ success: true, error: false, message: 'User deleted' });
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
     }
-
-
-    const deletedUser = await UserModel.findByIdAndDelete(request.params.id);
-
-    if (!deletedUser) {
-        response.status(404).json({
-            message: "User not deleted!",
-            success: false,
-            error: true
-        });
-    }
-
-    return response.status(200).json({
-        success: true,
-        error: false,
-        message: "User Deleted!",
-    });
 }
 
-
-//delete multiple products
-export async function deleteMultiple(request, response) {
-    const { ids } = request.body;
-
-    if (!ids || !Array.isArray(ids)) {
-        return response.status(400).json({ error: true, success: false, message: 'Invalid input' });
-    }
-
-
+export async function deleteMultiple(req, res) {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids)) return res.status(400).json({ error: true, success: false, message: 'Invalid input' });
     try {
         await UserModel.deleteMany({ _id: { $in: ids } });
-        return response.status(200).json({
-            message: "Users delete successfully",
-            error: false,
-            success: true
-        })
-
+        return res.status(200).json({ message: 'Users deleted', error: false, success: true });
     } catch (error) {
-        return response.status(500).json({
-            message: error.message || error,
-            error: true,
-            success: false
-        })
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
     }
+}
 
+// ─────────────────────────────────────────────────────────────
+// Email capture / subscribe (10% off coupon)
+// ─────────────────────────────────────────────────────────────
+
+export async function subscribeController(req, res) {
+    try {
+        const { email, source } = req.body;
+        if (!email) return res.status(400).json({ message: 'Email required', error: true, success: false });
+
+        const existing = await SubscriberModel.findOne({ email });
+        if (existing) {
+            return res.json({
+                message: 'Already subscribed',
+                error: false,
+                success: true,
+                couponCode: existing.couponCode,
+            });
+        }
+
+        // Generate unique 10% off coupon
+        const code = `VIBE10-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+
+        await CouponModel.create({ code, discountPercent: 10, maxUses: 1 });
+        const subscriber = await SubscriberModel.create({ email, couponCode: code, source: source || 'home_capture' });
+
+        await sendEmailFun({
+            sendTo: email,
+            subject: 'Here's your 10% off — Welcome to VibeFit 🎉',
+            text: `Your discount code: ${code}`,
+            html: `<p>Welcome to VibeFit! Use code <strong>${code}</strong> for 10% off your first order.</p>`,
+        });
+
+        return res.status(201).json({ message: 'Subscribed!', error: false, success: true, couponCode: code });
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal server error', error: true, success: false });
+    }
 }

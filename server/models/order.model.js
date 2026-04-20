@@ -1,56 +1,26 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const orderSchema = new mongoose.Schema({
-    userId: {
-        type: mongoose.Schema.ObjectId,
-        ref: 'User'
-    },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
     products: [
         {
-            productId: {
-                type: String
-            },
-            productTitle: {
-                type: String
-            },
-            quantity: {
-                type: Number
-            },
-            price: {
-                type: Number
-            },
-            image: {
-                type: String
-            },
-            subTotal: {
-                type: Number
-            }
-        }
+            productId: String,
+            productTitle: String,
+            quantity: Number,
+            price: Number,
+            image: String,
+            subTotal: Number,
+        },
     ],
-    paymentId: {
-        type: String,
-        default: ""
-    },
-    payment_status : {
-        type : String,
-        default : ""
-    },
-    order_status : {
-        type : String,
-        default : "confirm"
-    },
-    delivery_address: {
-        type: mongoose.Schema.ObjectId,
-        ref: 'address'
-    },
-    totalAmt: {
-        type: Number,
-        default: 0
-    }
-}, {
-    timestamps: true
-})
+    paymentId: { type: String, default: '' },
+    payment_status: { type: String, default: 'PENDING' },
+    payment_gateway: { type: String, enum: ['esewa', 'khalti', 'cod', ''], default: '' },
+    order_status: { type: String, default: 'confirm' },
+    delivery_address: { type: mongoose.Schema.Types.ObjectId, ref: 'address' },
+    totalAmt: { type: Number, default: 0 },
+}, { timestamps: true });
 
-const OrderModel = mongoose.model('order', orderSchema)
+orderSchema.index({ createdAt: -1 });
 
-export default OrderModel
+const OrderModel = mongoose.model('order', orderSchema);
+export default OrderModel;
