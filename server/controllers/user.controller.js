@@ -524,7 +524,7 @@ export async function subscribeController(req, res) {
 
         await sendEmailFun({
             sendTo: email,
-            subject: 'Here's your 10% off — Welcome to VibeFit 🎉',
+            subject: "Here's your 10% off — Welcome to VibeFit 🎉",
             text: `Your discount code: ${code}`,
             html: `<p>Welcome to VibeFit! Use code <strong>${code}</strong> for 10% off your first order.</p>`,
         });
