@@ -1,16 +1,26 @@
-import React from 'react';
-import Button from "@mui/material/Button";
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
+import { IoCloseCircle, IoArrowForward } from 'react-icons/io5';
+import SEO from '../../components/SEO';
 
-export const OrderFailed = () => {
-    return (
-        <section className='w-full p-10 py-8 lg:py-20 flex items-center justify-center flex-col gap-2'>
-            <img src="/delete.png"  className="w-[70px] sm:w-[120px]"  />
-            <h3 className='mb-0 text-[20px] sm:text-[25px]'>Your order is failed</h3>
-            <p className='mt-0 text-center'>your order is faild due to some reason</p>
-            <Link to="/">
-                <Button className="btn-org btn-border">Back to home</Button>
-            </Link>
-        </section>
-    )
+export function OrderFailed() {
+  return (
+    <>
+      <SEO title="Payment Failed — VibeFit" description="" url="/order/failed" />
+      <div className="container py-20 text-center max-w-lg">
+        <div className="w-20 h-20 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-6">
+          <IoCloseCircle size={48} className="text-danger" />
+        </div>
+        <h1 className="font-display font-bold text-3xl mb-3">Payment Failed</h1>
+        <p className="text-text-muted mb-8">
+          Something went wrong with your payment. Your cart is still saved — please try again or choose a different payment method.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link to="/checkout" className="btn-accent flex items-center justify-center gap-2">
+            Try Again <IoArrowForward size={14} />
+          </Link>
+          <Link to="/cart" className="btn-outline">View Cart</Link>
+        </div>
+      </div>
+    </>
+  );
 }

@@ -1,261 +1,153 @@
-import React,{useContext, useEffect, useState} from "react";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
-import { IoMdEye } from "react-icons/io";
-import { IoMdEyeOff } from "react-icons/io";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { FcGoogle } from "react-icons/fc";
-import { MyContext } from "../../App";
-import CircularProgress from '@mui/material/CircularProgress';
-import { postData } from "../../utils/api";
+import { useContext, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
+import { FcGoogle } from 'react-icons/fc';
+import { MyContext } from '../../App';
+import { postData } from '../../utils/api';
+import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { firebaseApp } from '../../firebase';
+import SEO from '../../components/SEO';
 
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { firebaseApp } from "../../firebase";
 const auth = getAuth(firebaseApp);
 const googleProvider = new GoogleAuthProvider();
 
-const Login = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPasswordShow, setIsPasswordShow] = useState(false);
-  const [formFields, setFormsFields] = useState({
-    email:'',
-    password:''
-  });
+export default function Login() {
+  const ctx = useContext(MyContext);
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const context  = useContext(MyContext);
-  const history = useNavigate();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    if (localStorage.getItem('accessToken')) navigate('/');
+  }, []);
 
- 
-  useEffect(()=>{
-    window.scrollTo(0,0)
-    const token = localStorage.getItem('accessToken');
+  const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
-    if (token !== undefined && token !== null && token !== "") {
-      history("/")
-    }
+  const handleForgotPassword = () => {
+    if (!form.email.trim()) { ctx.alertBox('error', 'Enter your email first'); return; }
+    localStorage.setItem('userEmail', form.email);
+    localStorage.setItem('actionType', 'forgot-password');
+    postData('/api/user/forgot-password', { email: form.email }).then((res) => {
+      if (res?.error === false) { ctx.alertBox('success', res.message); navigate('/verify'); }
+      else ctx.alertBox('error', res?.message);
+    });
+  };
 
-  },[]);
-
-  const forgotPassword =()=>{
-  
-          if(formFields.email===""){
-            context.alertBox("error", "Please enter email id");
-            return false;
-          }
-          else{
-            context.alertBox("success", `OTP send to ${formFields.email}`);
-            localStorage.setItem("userEmail", formFields.email);
-            localStorage.setItem("actionType", 'forgot-password');
-
-            postData("/api/user/forgot-password", {
-              email: formFields.email,
-            }).then((res) => {
-              if (res?.error === false) {
-                context.alertBox("success", res?.message);
-                history("/verify")
-              } else {
-                context.alertBox("error", res?.message);
-              }
-            })
-
-
-          }
-    
-  }
-
-  const onChangeInput = (e) => {
-    const { name, value } = e.target;
-    setFormsFields(() => {
-      return {
-        ...formFields,
-        [name]: value
-      }
-    })
-  }
-
-
-    const valideValue = Object.values(formFields).every(el => el)
-  
-    const handleSubmit = (e) => {
-      e.preventDefault();
-  
-      setIsLoading(true);
-  
-      if (formFields.email === "") {
-        context.alertBox("error", "Please enter email id");
-        return false
-      }
-  
-  
-      if (formFields.password === "") {
-        context.alertBox("error", "Please enter password");
-        return false
-      }
-  
-  
-      postData("/api/user/login", formFields, { withCredentials: true }).then((res) => {
-        console.log(res)
-
-        if (res?.error !== true) {
-          setIsLoading(false);
-          context.alertBox("success", res?.message);
-          setFormsFields({
-            email: "",
-            password: ""
-          })
-
-          localStorage.setItem("accessToken",res?.data?.accesstoken);
-          localStorage.setItem("refreshToken",res?.data?.refreshToken);
-
-          context.setIsLogin(true);
-
-          // If email needs verification, redirect to verification page
-          if (res?.needsVerification === true) {
-            localStorage.setItem("userEmail", formFields.email);
-            localStorage.removeItem("actionType"); // Remove forgot-password action type if exists
-            history("/verify")
-          } else {
-            history("/")
-          }
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!form.email || !form.password) { ctx.alertBox('error', 'Please fill in all fields'); return; }
+    setLoading(true);
+    postData('/api/user/login', form, { withCredentials: true }).then((res) => {
+      setLoading(false);
+      if (res?.error !== true) {
+        ctx.alertBox('success', res.message);
+        localStorage.setItem('accessToken', res?.data?.accesstoken);
+        localStorage.setItem('refreshToken', res?.data?.refreshToken);
+        ctx.setIsLogin(true);
+        if (res?.needsVerification) {
+          localStorage.setItem('userEmail', form.email);
+          localStorage.removeItem('actionType');
+          navigate('/verify');
         } else {
-          context.alertBox("error", res?.message);
-          setIsLoading(false);
+          navigate('/');
         }
-
-      })
-  
-  
-    }
-
-
-
-      const authWithGoogle = () => {
-    
-        signInWithPopup(auth, googleProvider)
-          .then((result) => {
-            // google token stuff
-            const credential = GoogleAuthProvider.credentialFromResult(result);
-            const token = credential.accessToken;
-            // user data
-            const user = result.user;
-    
-            const fields = {
-              name: user.providerData[0].displayName,
-              email: user.providerData[0].email,
-              password: null,
-              avatar: user.providerData[0].photoURL,
-              mobile: user.providerData[0].phoneNumber,
-              role: "USER"
-            };
-    
-    
-            postData("/api/user/authWithGoogle", fields).then((res) => {
-    
-              if (res?.error !== true) {
-                setIsLoading(false);
-                context.alertBox("success", res?.message);
-                localStorage.setItem("userEmail", fields.email)
-                localStorage.setItem("accessToken", res?.data?.accesstoken);
-                localStorage.setItem("refreshToken", res?.data?.refreshToken);
-    
-                context.setIsLogin(true);
-    
-                history("/")
-              } else {
-                context.alertBox("error", res?.message);
-                setIsLoading(false);
-              }
-    
-            })
-    
-            console.log(user)
-            // user info from google
-          }).catch((error) => {
-            // error handling
-            const errorCode = error.code;
-            const errorMessage = error.message;
-            const email = error.customData.email;
-            const credential = GoogleAuthProvider.credentialFromError(error);
-            // ...
-          });
-    
-    
+      } else {
+        ctx.alertBox('error', res?.message);
       }
-    
+    });
+  };
+
+  const authWithGoogle = () => {
+    signInWithPopup(auth, googleProvider).then((result) => {
+      const user = result.user;
+      postData('/api/user/authWithGoogle', {
+        name: user.providerData[0].displayName,
+        email: user.providerData[0].email,
+        password: null,
+        avatar: user.providerData[0].photoURL,
+        mobile: user.providerData[0].phoneNumber,
+        role: 'USER',
+      }).then((res) => {
+        if (res?.error !== true) {
+          localStorage.setItem('accessToken', res?.data?.accesstoken);
+          localStorage.setItem('refreshToken', res?.data?.refreshToken);
+          ctx.setIsLogin(true);
+          ctx.alertBox('success', res.message);
+          navigate('/');
+        } else {
+          ctx.alertBox('error', res?.message);
+        }
+      });
+    }).catch(() => {});
+  };
 
   return (
-    <section className="section py-5 sm:py-10">
-      <div className="container">
-        <div className="card shadow-md w-full sm:w-[400px] m-auto rounded-md bg-white p-5 px-10">
-          <h3 className="text-center text-[18px] text-black">
-            Login to your account
-          </h3>
+    <>
+      <SEO title="Sign In — VibeFit" description="" url="/login" />
+      <section className="min-h-[70vh] flex items-center py-12">
+        <div className="container max-w-sm">
+          <div className="bg-white border border-border rounded-2xl p-8 shadow-sm">
+            <h1 className="font-display font-bold text-2xl text-center mb-1">Welcome back</h1>
+            <p className="text-text-muted text-sm text-center mb-7">Sign in to your VibeFit account</p>
 
-          <form className="w-full mt-5"  onSubmit={handleSubmit}>
-            <div className="form-group w-full mb-5">
-              <TextField
-                type="emai"
-                id="email"
-                name="email"
-                value={formFields.email}
-                disabled={isLoading === true ? true : false}
-                label="Email Id"
-                variant="outlined"
-                className="w-full"
-                onChange={onChangeInput}
-              />
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold mb-1.5">Email</label>
+                <input
+                  type="email" name="email" required autoComplete="email"
+                  value={form.email} onChange={onChange}
+                  placeholder="your@email.com"
+                  className="input w-full"
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-1.5">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPw ? 'text' : 'password'} name="password" required autoComplete="current-password"
+                    value={form.password} onChange={onChange}
+                    placeholder="••••••••"
+                    className="input w-full pr-10"
+                    disabled={loading}
+                  />
+                  <button type="button" onClick={() => setShowPw((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary">
+                    {showPw ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <button type="button" onClick={handleForgotPassword}
+                className="text-sm text-accent hover:underline">
+                Forgot password?
+              </button>
+
+              <button type="submit" disabled={loading || !form.email || !form.password}
+                className="btn-accent w-full py-3 disabled:opacity-60">
+                {loading ? 'Signing in...' : 'Sign In'}
+              </button>
+            </form>
+
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+              <div className="relative flex justify-center"><span className="bg-white px-3 text-xs text-text-muted">or continue with</span></div>
             </div>
 
-            <div className="form-group w-full mb-5 relative">
-              <TextField
-                type={isPasswordShow===false ? 'password' : 'text'}
-                id="password"
-                label="Password"
-                variant="outlined"
-                className="w-full"
-                name="password"
-                value={formFields.password}
-                disabled={isLoading === true ? true : false}
-                onChange={onChangeInput}
-              />
-              <Button className="!absolute top-[10px] right-[10px] z-50 !w-[35px] !h-[35px] !min-w-[35px] !rounded-full !text-black" onClick={()=>{
-                setIsPasswordShow(!isPasswordShow)
-              }}>
-              {
-                isPasswordShow===false ? <IoMdEye className="text-[20px] opacity-75"/> :
-                <IoMdEyeOff className="text-[20px] opacity-75"/>
-              }
-              </Button>
-            </div>
+            <button onClick={authWithGoogle}
+              className="w-full flex items-center justify-center gap-3 border border-border rounded-md py-2.5 text-sm font-medium hover:bg-surface-alt transition-colors">
+              <FcGoogle size={20} /> Sign in with Google
+            </button>
 
-
-            <a className="link cursor-pointer text-[14px] font-[600]" onClick={forgotPassword}>Forgot Password?</a>
-
-            <div className="flex items-center w-full mt-3 mb-3">
-            <Button type="submit" disabled={!valideValue} className="btn-org btn-lg w-full flex gap-3">
-              {
-                isLoading === true ? <CircularProgress color="inherit" />
-                  :
-                  'Login'
-              }
-
-            </Button>
+            <p className="text-center text-sm text-text-muted mt-6">
+              No account? <Link to="/register" className="text-accent font-semibold hover:underline">Create one</Link>
+            </p>
           </div>
-
-            <p className="text-center">Not Registered? <Link className="link text-[14px] font-[600] text-primary" to="/register"> Sign Up</Link></p>
-
-
-            <p className="text-center font-[500]">Or continue with social account</p>
-
-            <Button className="flex gap-3 w-full !bg-[#f1f1f1] btn-lg !text-black"
-            onClick={authWithGoogle}>
-            <FcGoogle className="text-[20px]"/> Login with Google</Button>
-
-          </form>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
-};
-
-export default Login;
+}

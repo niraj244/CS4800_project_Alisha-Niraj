@@ -1,94 +1,55 @@
-import React from 'react'
+import { useContext, useEffect, useState } from 'react';
 import AccountSidebar from '../../components/AccountSidebar';
-import { useContext } from 'react';
 import { MyContext } from '../../App';
-
-import { useState } from 'react';
-
-import { useEffect } from 'react';
 import { deleteData, fetchDataFromApi } from '../../utils/api';
 import AddressBox from './addressBox';
+import SEO from '../../components/SEO';
 
+export default function Address() {
+  const context = useContext(MyContext);
+  const [address, setAddress] = useState([]);
 
-const label = { inputProps: { 'aria-label': 'Radio demo' } };
+  useEffect(() => {
+    if (context?.userData?._id) setAddress(context.userData.address_details || []);
+  }, [context?.userData]);
 
-const Address = () => {
+  const removeAddress = (id) => {
+    deleteData(`/api/address/${id}`).then(() => {
+      fetchDataFromApi(`/api/address/get?userId=${context?.userData?._id}`).then((res) => {
+        setAddress(res.data);
+        context?.getUserDetails();
+      });
+    });
+  };
 
-    const [address, setAddress] = useState([]);
+  return (
+    <>
+      <SEO title="Addresses — VibeFit" description="" url="/address" />
+      <section className="py-8 pb-16">
+        <div className="container flex flex-col lg:flex-row gap-6">
+          <div className="hidden lg:block w-56 shrink-0">
+            <AccountSidebar />
+          </div>
 
-    const context = useContext(MyContext);
+          <div className="flex-1 max-w-xl">
+            <div className="bg-white border border-border rounded-2xl p-6">
+              <h1 className="font-display font-bold text-xl mb-5">My Addresses</h1>
 
-    useEffect(() => {
-        if (context?.userData?._id !== "" && context?.userData?._id !== undefined) {
+              <button
+                onClick={() => { context?.setOpenAddressPanel(true); context?.setAddressMode('add'); }}
+                className="w-full flex items-center justify-center p-4 rounded-xl border border-dashed border-accent/50 text-accent font-semibold text-sm hover:bg-accent/5 transition-colors mb-5">
+                + Add New Address
+              </button>
 
-            setAddress(context?.userData?.address_details);
-
-        }
-
-    }, [context?.userData])
-
-
-    const removeAddress = (id) => {
-        deleteData(`/api/address/${id}`).then((res) => {
-            fetchDataFromApi(`/api/address/get?userId=${context?.userData?._id}`).then((res) => {
-                setAddress(res.data);
-                context?.getUserDetails();
-
-            })
-        })
-    }
-
-
-
-    return (
-        <>
-            <section className="py-5 lg:py-10 w-full">
-                <div className="container flex flex-col md:flex-row gap-5">
-                    <div className="col1 w-full  md:w-[30%] lg:w-[20%]">
-                        <AccountSidebar />
-                    </div>
-
-                    <div className="col2 w-full md:w-[70%] lg:w-[50%]">
-                        <div className="card bg-white p-5 shadow-md rounded-md mb-5">
-                            <div className="flex items-center pb-3">
-                                <h2 className="pb-0">Address</h2>
-                            </div>
-                            <hr />
-
-
-                            <div className='flex items-center justify-center p-5 rounded-md border border-dashed border-[rgba(0,0,0,0.2)] bg-[#f1faff] hover:bg-[#e7f3f9] cursor-pointer'
-                                onClick={() => {
-                                    context?.setOpenAddressPanel(true);
-                                    context?.setAddressMode("add");
-                                }}
-                            >
-                                <span className='text-[14px] font-[500]'>Add Address</span>
-                            </div>
-
-
-                            <div className="flex gap-2 flex-col mt-4">
-
-                                {
-                                    address?.length > 0 && address?.map((address, index) => {
-                                        return (
-                                            <AddressBox address={address} key={index} removeAddress={removeAddress} />
-                                        )
-                                    })
-                                }
-
-                            </div>
-
-                        </div>
-
-
-
-                    </div>
-                </div>
-            </section>
-
-        </>
-    )
+              <div className="space-y-3">
+                {address?.map((addr, i) => (
+                  <AddressBox key={i} address={addr} removeAddress={removeAddress} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
+  );
 }
-
-
-export default Address;

@@ -1,140 +1,87 @@
-import React, { useContext, useEffect, useState } from "react";
-import OtpBox from "../../components/OtpBox";
-import Button from "@mui/material/Button";
-import { postData } from "../../utils/api";
-import { useNavigate } from "react-router-dom";
-import { MyContext } from "../../App";
+import { useContext, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import OtpBox from '../../components/OtpBox';
+import { MyContext } from '../../App';
+import { postData } from '../../utils/api';
+import SEO from '../../components/SEO';
 
-const Verify = () => {
-  const [otp, setOtp] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isResending, setIsResending] = useState(false);
-  const handleOtpChange = (value) => {
-    setOtp(value);
-  };
+export default function Verify() {
+  const ctx = useContext(MyContext);
+  const navigate = useNavigate();
+  const [otp, setOtp] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
 
-  const history = useNavigate();
-  const context = useContext(MyContext)
-
-  useEffect(() => {
-    // Check if user is already logged in
-    const token = localStorage.getItem('accessToken');
-    if (token && token !== "" && token !== null) {
-      // User is logged in, redirect to home after verification
-    }
-  }, []);
+  const email = localStorage.getItem('userEmail');
 
   const resendOtp = () => {
-    const email = localStorage.getItem("userEmail");
-    if (!email) {
-      context.alertBox("error", "Email not found");
-      return;
-    }
+    if (!email) { ctx.alertBox('error', 'Email not found'); return; }
+    setResending(true);
+    postData('/api/user/resend-otp', { email }).then((res) => {
+      setResending(false);
+      if (res?.error === false) ctx.alertBox('success', res.message);
+      else ctx.alertBox('error', res?.message);
+    });
+  };
 
-    setIsResending(true);
-    postData("/api/user/resend-otp", { email }).then((res) => {
-      if (res?.error === false) {
-        context.alertBox("success", res?.message);
-      } else {
-        context.alertBox("error", res?.message);
-      }
-      setIsResending(false);
-    })
-  }
-
-  const verityOTP = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
+    if (!otp || otp.length < 6) { ctx.alertBox('error', 'Please enter the 6-digit OTP'); return; }
+    setLoading(true);
+    const actionType = localStorage.getItem('actionType');
+    const isForgotPw = actionType === 'forgot-password';
 
-    if (otp === "") {
-      context.alertBox("error", "Please enter OTP");
-      return;
-    }
-
-    setIsLoading(true);
-    const actionType = localStorage.getItem("actionType");
-    const token = localStorage.getItem('accessToken');
-
-    if (actionType !== "forgot-password") {
-
-      postData("/api/user/verifyEmail", {
-        email: localStorage.getItem("userEmail"),
-        otp: otp
-      }).then((res) => {
-        if (res?.error === false) {
-          context.alertBox("success", res?.message);
-          localStorage.removeItem("userEmail")
-          setIsLoading(false);
-          // If user is already logged in, redirect to home, otherwise to login
-          if (token && token !== "" && token !== null) {
-            history("/")
-          } else {
-            history("/login")
-          }
+    const endpoint = isForgotPw ? '/api/user/verify-forgot-password-otp' : '/api/user/verifyEmail';
+    postData(endpoint, { email, otp }).then((res) => {
+      setLoading(false);
+      if (res?.error === false) {
+        ctx.alertBox('success', res.message);
+        if (isForgotPw) {
+          navigate('/forgot-password');
         } else {
-          context.alertBox("error", res?.message);
-          setIsLoading(false);
+          localStorage.removeItem('userEmail');
+          const token = localStorage.getItem('accessToken');
+          navigate(token ? '/' : '/login');
         }
-      })
-    }
-    
-    else{
-      postData("/api/user/verify-forgot-password-otp", {
-        email: localStorage.getItem("userEmail"),
-        otp: otp
-      }).then((res) => {
-        if (res?.error === false) {
-          context.alertBox("success", res?.message);
-          setIsLoading(false);
-          history("/forgot-password")
-        } else {
-          context.alertBox("error", res?.message);
-          setIsLoading(false);
-        }
-      })
-    }
-
-  }
+      } else {
+        ctx.alertBox('error', res?.message);
+      }
+    });
+  };
 
   return (
-    <section className="section py-5 lg:py-10">
-      <div className="container">
-        <div className="card shadow-md w-full sm:w-[400px] m-auto rounded-md bg-white p-5 px-10">
-          <div className="text-center flex items-center justify-center">
-            <img src="/verify3.png" width="80" />
+    <>
+      <SEO title="Verify OTP — VibeFit" description="" url="/verify" />
+      <section className="min-h-[70vh] flex items-center py-12">
+        <div className="container max-w-sm">
+          <div className="bg-white border border-border rounded-2xl p-8 shadow-sm text-center">
+            <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-5">
+              <span className="text-2xl">✉️</span>
+            </div>
+            <h1 className="font-display font-bold text-2xl mb-2">Check your email</h1>
+            <p className="text-text-muted text-sm mb-1">
+              We sent a 6-digit code to
+            </p>
+            <p className="font-semibold text-sm mb-6">{email}</p>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="otpBox">
+                <OtpBox length={6} onChange={setOtp} />
+              </div>
+
+              <button type="submit" disabled={loading || otp.length < 6}
+                className="btn-accent w-full py-3 disabled:opacity-60">
+                {loading ? 'Verifying...' : 'Verify OTP'}
+              </button>
+            </form>
+
+            <button type="button" onClick={resendOtp} disabled={resending}
+              className="mt-4 text-sm text-accent hover:underline disabled:opacity-50">
+              {resending ? 'Sending...' : "Didn't receive it? Resend OTP"}
+            </button>
           </div>
-          <h3 className="text-center text-[18px] text-black mt-4 mb-1">
-            Verify OTP
-          </h3>
-
-          <p className="text-center mt-0 mb-4">
-            OTP send to{" "}
-            <span className="text-primary font-bold">{localStorage.getItem("userEmail")}</span>
-          </p>
-
-          <form onSubmit={verityOTP}>
-            <OtpBox length={6} onChange={handleOtpChange} />
-
-            <div className="flex items-center justify-center mt-5 px-3">
-              <Button type="submit" disabled={isLoading} className="w-full btn-org btn-lg">
-                {isLoading ? "Verifying..." : "Verify OTP"}
-              </Button>
-            </div>
-
-            <div className="flex items-center justify-center mt-3 px-3">
-              <Button 
-                type="button" 
-                onClick={resendOtp} 
-                disabled={isResending}
-                className="text-primary text-[14px] hover:underline"
-              >
-                {isResending ? "Sending..." : "Resend OTP"}
-              </Button>
-            </div>
-          </form>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
-};
-
-export default Verify;
+}

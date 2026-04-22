@@ -1,66 +1,59 @@
-import React, { useContext, useState } from "react";
-import { Link } from "react-router-dom";
-import Rating from "@mui/material/Rating";
-import { IoCloseSharp } from "react-icons/io5";
-import { MyContext } from "../../App";
-import { deleteData } from "../../utils/api";
-import { formatPrice } from "../../utils/currency";
+import { useContext } from 'react';
+import { Link } from 'react-router-dom';
+import { IoCloseSharp, IoStarSharp } from 'react-icons/io5';
+import { MyContext } from '../../App';
+import { deleteData } from '../../utils/api';
 
-const MyListItems = (props) => {
-
+export default function MyListItems({ item }) {
   const context = useContext(MyContext);
 
-  const removeItem=(id)=>{
-    deleteData(`/api/myList/${id}`).then((res)=>{
-      context?.alertBox("success", "Product remove from My List");
+  const removeItem = (id) => {
+    deleteData(`/api/myList/${id}`).then(() => {
+      context?.alertBox('success', 'Removed from wishlist');
       context?.getMyListData();
-     
-    })
-  }
+    });
+  };
+
+  const stars = Math.round(item?.rating || 0);
 
   return (
-    <div className="cartItem w-full p-3 flex items-center gap-4 pb-5 border-b border-[rgba(0,0,0,0.1)]">
-      <div className="img w-[30%] sm:w-[15%] h-[150px] rounded-md overflow-hidden">
-        <Link to={`/product/${props?.item?.productId}`} className="group">
-          <img
-            src={props?.item?.image}
-            className="w-full group-hover:scale-105 transition-all"
-          />
+    <div className="flex gap-4 p-4 border-b border-border last:border-0">
+      <Link to={`/product/${item?.productId}`} className="shrink-0 w-20 h-24 rounded-lg overflow-hidden bg-surface-alt">
+        <img src={item?.image} alt={item?.productTitle} className="w-full h-full object-cover hover:scale-105 transition-transform" />
+      </Link>
+
+      <div className="flex-1 min-w-0 relative pr-6">
+        <button onClick={() => removeItem(item?._id)}
+          className="absolute top-0 right-0 text-text-muted hover:text-danger transition-colors">
+          <IoCloseSharp size={18} />
+        </button>
+
+        {item?.brand && <p className="text-xs text-text-muted uppercase tracking-wide">{item.brand}</p>}
+        <Link to={`/product/${item?.productId}`}
+          className="text-sm font-semibold hover:text-accent transition-colors line-clamp-2 leading-snug">
+          {item?.productTitle?.substr(0, 80)}...
         </Link>
-      </div>
 
-      <div className="info w-full md:w-[85%] relative">
-        <IoCloseSharp className="cursor-pointer absolute top-[0px] right-[0px] text-[22px] link transition-all" onClick={()=>removeItem(props?.item?._id)} />
-        <span className="text-[13px]">{props?.item?.brand}</span>
-        <h3 className="text-[13px] sm:text-[15px]">
-          <Link to={`/product/${props?.item?.productId}`} className="link">{props?.item?.productTitle?.substr(0,80)+'...'}</Link>
-        </h3>
+        {stars > 0 && (
+          <div className="flex gap-0.5 mt-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <IoStarSharp key={i} size={11} className={i < stars ? 'text-yellow-400' : 'text-border'} />
+            ))}
+          </div>
+        )}
 
-        <Rating name="size-small" value={props?.item?.rating} size="small" readOnly />
-
-
-
-        <div className="flex items-center gap-4 mt-2 mb-2">
-          {props?.item?.discount > 0 ? (
+        <div className="flex items-center gap-2 mt-2">
+          {item?.discount > 0 ? (
             <>
-              <span className="oldPrice line-through text-gray-500 text-[14px] font-[500]">
-                {formatPrice(props?.item?.oldPrice)}
-              </span>
-              <span className="price text-primary text-[14px]  font-[600]">
-                {formatPrice(props?.item?.price)}
-              </span>
-              <span className="price text-primary text-[14px]  font-[600]">
-                {props?.item?.discount}% OFF
-              </span>
+              <span className="text-xs text-text-muted line-through">रु {parseInt(item.oldPrice).toLocaleString()}</span>
+              <span className="text-sm font-bold text-accent">रु {parseInt(item.price).toLocaleString()}</span>
+              <span className="text-xs bg-accent/10 text-accent font-semibold px-1.5 py-0.5 rounded">{item.discount}% OFF</span>
             </>
           ) : (
-            <span className="price text-[14px]  font-[600]">{formatPrice(props?.item?.price)}</span>
+            <span className="text-sm font-bold">रु {parseInt(item.price).toLocaleString()}</span>
           )}
         </div>
-
       </div>
     </div>
   );
-};
-
-export default MyListItems;
+}

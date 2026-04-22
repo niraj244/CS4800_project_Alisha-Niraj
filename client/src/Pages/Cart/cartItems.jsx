@@ -1,229 +1,120 @@
-import React, { useContext, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
-import { GoTriangleDown } from "react-icons/go";
-import Rating from "@mui/material/Rating";
-import { IoCloseSharp } from "react-icons/io5";
-import { deleteData, editData, fetchDataFromApi } from "../../utils/api";
-import { MyContext } from "../../App";
-import { formatPrice } from "../../utils/currency";
+import { useContext, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { IoCloseSharp } from 'react-icons/io5';
+import { IoStarSharp } from 'react-icons/io5';
+import { deleteData, editData, fetchDataFromApi } from '../../utils/api';
+import { MyContext } from '../../App';
 
-const CartItems = (props) => {
-  const [sizeanchorEl, setSizeAnchorEl] = useState(null);
-  const [selectedSize, setCartItems] = useState(props.selected);
-  const openSize = Boolean(sizeanchorEl);
-
-  const [qtyanchorEl, setQtyAnchorEl] = useState(null);
-  const [selectedQty, setSelectedQty] = useState(props.qty);
-  const openQty = Boolean(qtyanchorEl);
-
-  const numbers = Array.from({ length: 20 }, () => Math.floor(Math.random() * 10) + 1);
-
+export default function CartItems({ item, qty, selected }) {
   const context = useContext(MyContext);
+  const [selectedSize, setSelectedSize] = useState(selected || '');
+  const [selectedQty, setSelectedQty] = useState(qty || 1);
 
-  const handleClickSize = (event) => {
-    setSizeAnchorEl(event.currentTarget);
-  };
-  const handleCloseSize = (value) => {
-    setSizeAnchorEl(null);
-    if (value !== null) {
-      setCartItems(value);
-    }
-  };
-
-  const handleClickQty = (event) => {
-    setQtyAnchorEl(event.currentTarget);
-  };
-  const handleCloseQty = (value) => {
-    setQtyAnchorEl(null);
-    if (value !== null) {
-      setSelectedQty(value);
-
-      const cartObj = {
-        _id: props?.item?._id,
-        qty: value,
-        subTotal: props?.item?.price * value
+  const handleQtyChange = (e) => {
+    const value = parseInt(e.target.value);
+    setSelectedQty(value);
+    editData('/api/cart/update-qty', {
+      _id: item?._id,
+      qty: value,
+      subTotal: item?.price * value,
+    }).then((res) => {
+      if (res?.data?.error === false) {
+        context.alertBox('success', res?.data?.message);
+        context?.getCartItems();
       }
-
-      editData("/api/cart/update-qty", cartObj).then((res) => {
-        if (res?.data?.error === false) {
-          context.alertBox("success", res?.data?.message);
-          context?.getCartItems();
-        }
-      })
-
-
-
-    }
+    });
   };
 
+  const handleSizeChange = (e) => {
+    const val = e.target.value;
+    fetchDataFromApi(`/api/product/${item?.productId}`).then((res) => {
+      const product = res?.product;
+      const available = product?.size?.some((s) => s.includes(val));
+      if (available) {
+        setSelectedSize(val);
+        editData('/api/cart/update-qty', {
+          _id: item?._id,
+          qty: selectedQty,
+          subTotal: item?.price * selectedQty,
+          size: val,
+        }).then((res) => {
+          if (res?.data?.error === false) {
+            context.alertBox('success', res?.data?.message);
+            context?.getCartItems();
+          }
+        });
+      } else {
+        context.alertBox('error', `Size ${val} not available`);
+      }
+    });
+  };
 
-  const updateCart = (selectedVal, qty, field) => {
-    handleCloseSize(selectedVal)
-
-    const cartObj = {
-      _id: props?.item?._id,
-      qty: qty,
-      subTotal: props?.item?.price * qty,
-      size: props?.item?.size !== "" ? selectedVal : '',
-    }
-
-
-    //if product size available
-    if (field === "size") {
-
-      fetchDataFromApi(`/api/product/${props?.item?.productId}`).then((res) => {
-        const product = res?.product;
-
-
-        const item = product?.size?.filter((size) =>
-          size?.includes(selectedVal)
-        )
-
-        if (item?.length !== 0) {
-          editData("/api/cart/update-qty", cartObj).then((res) => {
-            if (res?.data?.error === false) {
-              context.alertBox("success", res?.data?.message);
-              context?.getCartItems();
-            }
-          })
-        } else {
-          context.alertBox("error", `Product not available with the size of ${selectedVal}`);
-        }
-
-
-      })
-
-    }
-
-
-
-  }
-
-
-
-
-  const removeItem = (id) => {
-    deleteData(`/api/cart/delete-cart-item/${id}`).then((res) => {
-      context.alertBox("success", "Product removed from cart");
+  const removeItem = () => {
+    deleteData(`/api/cart/delete-cart-item/${item?._id}`).then(() => {
+      context.alertBox('success', 'Removed from cart');
       context?.getCartItems();
-    })
-  }
+    });
+  };
 
+  const stars = Math.round(item?.rating || 0);
 
   return (
-    <div className="cartItem w-full p-3 flex items-center gap-4 pb-5 border-b border-[rgba(0,0,0,0.1)]">
-      <div className="img w-[30%] sm:w-[20%] lg:w-[15%] rounded-md overflow-hidden">
-        <Link to={`/product/${props?.item?.productId}`} className="group">
-          <img
-            src={props?.item?.image}
-            className="w-full group-hover:scale-105 transition-all"
-          />
+    <div className="flex gap-4 p-4 border-b border-border last:border-0">
+      <Link to={`/product/${item?.productId}`} className="shrink-0 w-20 h-24 rounded-lg overflow-hidden bg-surface-alt">
+        <img src={item?.image} alt={item?.productTitle} className="w-full h-full object-cover hover:scale-105 transition-transform" />
+      </Link>
+
+      <div className="flex-1 min-w-0 relative pr-6">
+        <button onClick={removeItem} className="absolute top-0 right-0 text-text-muted hover:text-danger transition-colors">
+          <IoCloseSharp size={18} />
+        </button>
+
+        {item?.brand && <p className="text-xs text-text-muted uppercase tracking-wide">{item.brand}</p>}
+        <Link to={`/product/${item?.productId}`} className="text-sm font-semibold hover:text-accent transition-colors line-clamp-2 leading-snug">
+          {item?.productTitle}
         </Link>
-      </div>
 
-      <div className="info  w-[70%]  sm:w-[80%]  lg:w-[85%] relative">
-        <IoCloseSharp className="cursor-pointer absolute top-[0px] right-[0px] text-[22px] link transition-all" onClick={() => removeItem(props?.item?._id)} />
-        <span className="text-[13px]">{props?.item?.brand}</span>
-        <h3 className="text-[13px] sm:text-[15px] w-[80%]">
-          <Link to={`/product/${props?.item?.productId}`} className="link">{props?.item?.productTitle?.substr(0, context?.windowWidth < 992 ? 30 : 120) + '...'}</Link>
-        </h3>
-
-        <Rating name="size-small" value={props?.item?.rating} size="small" readOnly />
-
-        <div className="flex items-center gap-4 mt-2">
-          {
-            props?.item?.size !== "" &&
-            <>
-              {
-                props?.productSizeData?.length !== 0 &&
-                <div className="relative">
-                  <span
-                    className="flex items-center justify-center bg-[#f1f1f1] text-[11px]
-       font-[600] py-1 px-2 rounded-md cursor-pointer"
-                    onClick={handleClickSize}
-                  >
-                    Size: {selectedSize} <GoTriangleDown />
-                  </span>
-
-                  <Menu
-                    id="size-menu"
-                    anchorEl={sizeanchorEl}
-                    open={openSize}
-                    onClose={() => handleCloseSize(null)}
-                    MenuListProps={{
-                      "aria-labelledby": "basic-button",
-                    }}
-                  >
-                    {
-                      props?.productSizeData?.map((item, index) => {
-                        return (
-                          <MenuItem key={index}
-                            className={`${item?.name === selectedSize && 'selected'}`}
-                            onClick={() => updateCart(item?.name, props?.item?.quantity, "size")}>
-                            {item?.name}
-                          </MenuItem>
-                        )
-                      })
-                    }
-
-                  </Menu>
-                </div>
-              }
-            </>
-          }
-
-
-
-          <div className="relative">
-            <span
-              className="flex items-center justify-center bg-[#f1f1f1] text-[11px]
-     font-[600] py-1 px-2 rounded-md cursor-pointer"
-              onClick={handleClickQty}
-            >
-              Qty: {selectedQty} <GoTriangleDown />
-            </span>
-
-            <Menu
-              id="size-menu"
-              anchorEl={qtyanchorEl}
-              open={openQty}
-              onClose={() => handleCloseQty(null)}
-              MenuListProps={{
-                "aria-labelledby": "basic-button",
-              }}
-            >
-
-
-              {Array.from({ length: 15 }).map((_, index) => (
-                <MenuItem key={index} onClick={() => handleCloseQty(index + 1)}>{index + 1}</MenuItem>
-              ))}
-
-            </Menu>
+        {stars > 0 && (
+          <div className="flex gap-0.5 mt-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <IoStarSharp key={i} size={11} className={i < stars ? 'text-yellow-400' : 'text-border'} />
+            ))}
           </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+          {item?.size && (
+            <select
+              value={selectedSize}
+              onChange={handleSizeChange}
+              className="text-xs border border-border rounded px-2 py-1 bg-white focus:outline-none focus:border-accent"
+            >
+              <option value={selectedSize}>Size: {selectedSize}</option>
+            </select>
+          )}
+          <select
+            value={selectedQty}
+            onChange={handleQtyChange}
+            className="text-xs border border-border rounded px-2 py-1 bg-white focus:outline-none focus:border-accent"
+          >
+            {Array.from({ length: 15 }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
         </div>
 
-        <div className="flex items-center gap-4 mt-2">
-          {props?.item?.discount > 0 ? (
+        <div className="flex items-center gap-2 mt-2">
+          {item?.discount > 0 ? (
             <>
-              <span className="oldPrice line-through text-gray-500 text-[14px] font-[500]">
-                {formatPrice(props?.item?.oldPrice)}
-              </span>
-              <span className="price text-primary text-[14px]  font-[600]">
-                {formatPrice(props?.item?.price)}
-              </span>
-              <span className="price text-primary text-[14px]  font-[600]">
-                {props?.item?.discount}% OFF
-              </span>
+              <span className="text-xs text-text-muted line-through">रु {parseInt(item.oldPrice).toLocaleString()}</span>
+              <span className="text-sm font-bold text-accent">रु {parseInt(item.price).toLocaleString()}</span>
+              <span className="text-xs bg-accent/10 text-accent font-semibold px-1.5 py-0.5 rounded">{item.discount}% OFF</span>
             </>
           ) : (
-            <span className="price text-[14px]  font-[600]">{formatPrice(props?.item?.price)}</span>
+            <span className="text-sm font-bold">रु {parseInt(item.price).toLocaleString()}</span>
           )}
         </div>
       </div>
     </div>
   );
-};
-
-export default CartItems;
+}

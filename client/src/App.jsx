@@ -14,7 +14,6 @@ import Home from './Pages/Home';
 import Shop from './Pages/Shop';
 import Collections from './Pages/Collections';
 import { ProductDetails } from './Pages/ProductDetails';
-import ProductListing from './Pages/ProductListing';
 import CartPage from './Pages/Cart';
 import Checkout from './Pages/Checkout';
 import Login from './Pages/Login';
@@ -28,7 +27,7 @@ import Orders from './Pages/Orders';
 import { OrderSuccess } from './Pages/Orders/success';
 import { OrderFailed } from './Pages/Orders/failed';
 import SearchPage from './Pages/Search';
-import Compare from './Pages/Compare';
+import { Navigate } from 'react-router-dom';
 import About from './Pages/About';
 import Contact from './Pages/Contact';
 import StaticPage from './Pages/StaticPage';
@@ -43,8 +42,6 @@ function App() {
   const [catData, setCatData] = useState([]);
   const [cartData, setCartData] = useState([]);
   const [myListData, setMyListData] = useState([]);
-  const [compareData, setCompareData] = useState([]);
-
   const [openCartPanel, setOpenCartPanel] = useState(false);
   const [openAddressPanel, setOpenAddressPanel] = useState(false);
   const [addressMode, setAddressMode] = useState('add');
@@ -123,17 +120,6 @@ function App() {
     });
   };
 
-  const addToCompare = (product) => {
-    if (compareData.some((i) => i._id === product._id)) { alertBox('info', 'Already in compare'); return; }
-    if (compareData.length >= 4) { alertBox('error', 'Max 4 products to compare'); return; }
-    setCompareData((prev) => [...prev, { _id: product._id, name: product.name, images: product.images, price: product.price, oldPrice: product.oldPrice, rating: product.rating, brand: product.brand, discount: product.discount, description: product.description, size: product.size }]);
-    alertBox('success', 'Added to compare');
-  };
-
-  const removeFromCompare = (productId) => {
-    setCompareData((prev) => prev.filter((i) => i._id !== productId));
-  };
-
   useEffect(() => {
     localStorage.removeItem('userEmail');
     const token = localStorage.getItem('accessToken');
@@ -156,16 +142,6 @@ function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('compareProducts');
-    if (saved) { try { setCompareData(JSON.parse(saved)); } catch {} }
-  }, []);
-
-  useEffect(() => {
-    if (compareData.length > 0) localStorage.setItem('compareProducts', JSON.stringify(compareData));
-    else localStorage.removeItem('compareProducts');
-  }, [compareData]);
-
   const values = {
     openProductDetailsModal, setOpenProductDetailsModal, handleOpenProductDetailsModal, handleCloseProductDetailsModal,
     setOpenCartPanel, toggleCartPanel, openCartPanel,
@@ -177,7 +153,6 @@ function App() {
     addToCart, cartData, setCartData, getCartItems,
     myListData, setMyListData, getMyListData,
     getUserDetails,
-    compareData, setCompareData, addToCompare, removeFromCompare,
     setAddressMode, addressMode, addressId, setAddressId,
     setSearchData, searchData,
     windowWidth,
@@ -196,7 +171,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/collections/:slug" element={<Collections />} />
-            <Route path="/products" element={<ProductListing />} />
+            <Route path="/products" element={<Navigate to="/shop" replace />} />
             <Route path="/product/:id" element={<ProductDetails />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/checkout" element={<Checkout />} />
@@ -211,7 +186,7 @@ function App() {
             <Route path="/order/success" element={<OrderSuccess />} />
             <Route path="/order/failed" element={<OrderFailed />} />
             <Route path="/search" element={<SearchPage />} />
-            <Route path="/compare" element={<Compare />} />
+            <Route path="/compare" element={<Navigate to="/shop" replace />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/privacy" element={<StaticPage page="privacy" />} />

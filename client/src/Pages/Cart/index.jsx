@@ -1,131 +1,103 @@
-import React, { useContext, useEffect, useState } from "react";
+import { useContext, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { BsFillBagCheckFill } from 'react-icons/bs';
+import CartItems from './cartItems';
+import { MyContext } from '../../App';
+import SEO from '../../components/SEO';
 
-import Button from "@mui/material/Button";
-import { BsFillBagCheckFill } from "react-icons/bs";
-import CartItems from "./cartItems";
-import { MyContext } from "../../App";
-import { fetchDataFromApi } from "../../utils/api";
-import { Link } from "react-router-dom";
-import { formatPrice } from "../../utils/currency";
+const FREE_SHIPPING_THRESHOLD = 2000;
 
-const CartPage = () => {
-
-  const [productSizeData, setProductSizeData] = useState([]);
+export default function CartPage() {
   const context = useContext(MyContext);
 
-  useEffect(() => {
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
-    window.scrollTo(0, 0)
+  const subtotal = context.cartData?.length
+    ? context.cartData.reduce((sum, item) => sum + parseInt(item.price) * item.quantity, 0)
+    : 0;
 
-    fetchDataFromApi("/api/product/productSize/get").then((res) => {
-      if (res?.error === false) {
-        setProductSizeData(res?.data)
-      }
-    })
-
-
-  }, []);
-
-
-
-
-  const selectedSize = (item) => {
-    if (item?.size !== "") {
-      return item?.size;
-    }
-
-  }
-
+  const freeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
+  const remaining = FREE_SHIPPING_THRESHOLD - subtotal;
 
   return (
-    <section className="section py-4 lg:py-8 pb-10">
-      <div className="container w-[80%] max-w-[80%] flex gap-5 flex-col lg:flex-row">
-        <div className="leftPart w-full lg:w-[70%]">
-          <div className="shadow-md rounded-md bg-white">
-            <div className="py-5 px-3 border-b border-[rgba(0,0,0,0.1)]">
-              <h2>Your Cart</h2>
-              <p className="mt-0 mb-0">
-                There are <span className="font-bold text-primary">{context?.cartData?.length}</span>{" "}
-                products in your cart
-              </p>
+    <>
+      <SEO title="Cart — VibeFit" description="" url="/cart" />
+      <section className="py-8 pb-16">
+        <div className="container">
+          {context?.cartData?.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 gap-5 text-center">
+              <div className="w-24 h-24 rounded-full bg-surface-alt flex items-center justify-center text-4xl">🛒</div>
+              <h2 className="font-display font-bold text-2xl">Your cart is empty</h2>
+              <p className="text-text-muted">Add some items to get started</p>
+              <Link to="/shop" className="btn-accent px-8 py-3">Continue Shopping</Link>
             </div>
+          ) : (
+            <div className="flex flex-col lg:flex-row gap-6">
+              <div className="flex-1">
+                <div className="bg-white border border-border rounded-2xl overflow-hidden">
+                  <div className="px-6 py-4 border-b border-border">
+                    <h1 className="font-display font-bold text-xl">Your Cart</h1>
+                    <p className="text-text-muted text-sm mt-0.5">
+                      {context.cartData.length} {context.cartData.length === 1 ? 'item' : 'items'}
+                    </p>
+                  </div>
+                  {context.cartData.map((item, index) => (
+                    <CartItems key={index} item={item} qty={item.quantity} selected={item.size} />
+                  ))}
+                </div>
+              </div>
 
-            {
+              <div className="w-full lg:w-80 shrink-0">
+                <div className="bg-white border border-border rounded-2xl p-6 sticky top-24">
+                  <h2 className="font-display font-bold text-lg mb-4">Order Summary</h2>
 
-              context?.cartData?.length !== 0 ? context?.cartData?.map((item, index) => {
-                return (
-                  <CartItems selected={() => selectedSize(item)} qty={item?.quantity} item={item} key={index} productSizeData={productSizeData} />
-                )
-              })
-
-                :
-
-
-
-                <>
-                  <>
-                    <div className="flex items-center justify-center flex-col py-10 gap-5">
-                      <img src="/empty-cart.png" className="w-[150px]" />
-                      <h4>Your Cart is currently empty</h4>
-                      <Link to="/"><Button className="btn-org">Continue Shopping</Button></Link>
+                  {!freeShipping && (
+                    <div className="mb-4 p-3 bg-surface-alt rounded-lg text-sm">
+                      <p className="text-text-muted mb-1.5">
+                        Add <span className="font-semibold text-text-primary">रु {remaining.toLocaleString()}</span> more for free shipping
+                      </p>
+                      <div className="h-1.5 bg-border rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-accent rounded-full transition-all"
+                          style={{ width: `${Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100)}%` }}
+                        />
+                      </div>
                     </div>
-                  </>
+                  )}
 
-                </>
-            }
+                  <div className="space-y-2 text-sm mb-4">
+                    <div className="flex justify-between">
+                      <span className="text-text-muted">Subtotal</span>
+                      <span className="font-semibold">रु {subtotal.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-text-muted">Shipping</span>
+                      <span className={freeShipping ? 'text-green-600 font-semibold' : 'font-semibold'}>
+                        {freeShipping ? 'Free' : `रु ${(subtotal < FREE_SHIPPING_THRESHOLD ? 150 : 0).toLocaleString()}`}
+                      </span>
+                    </div>
+                  </div>
 
-          </div>
+                  <div className="border-t border-border pt-3 mb-5">
+                    <div className="flex justify-between font-bold text-base">
+                      <span>Total</span>
+                      <span>रु {(subtotal + (freeShipping ? 0 : 150)).toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  <Link to="/checkout" className="btn-accent w-full py-3 flex items-center justify-center gap-2 text-sm font-semibold">
+                    <BsFillBagCheckFill size={16} /> Proceed to Checkout
+                  </Link>
+
+                  <Link to="/shop" className="block text-center text-sm text-accent hover:underline mt-3">
+                    Continue Shopping
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-
-        <div className="rightPart w-full lg:w-[30%]">
-          <div className="shadow-md rounded-md bg-white p-5 sticky top-[155px] z-[90]">
-            <h3 className="pb-3">Cart Totals</h3>
-            <hr />
-
-            <p className="flex items-center justify-between">
-              <span className="text-[14px] font-[500]">Subtotal</span>
-              <span className="text-primary font-bold">
-                {
-                  formatPrice(context.cartData?.length !== 0 ?
-                    context.cartData?.map(item => parseInt(item.price) * item.quantity)
-                      .reduce((total, value) => total + value, 0) : 0)
-                }
-              </span>
-            </p>
-
-            <p className="flex items-center justify-between">
-              <span className="text-[14px] font-[500]">Shipping</span>
-              <span className="font-bold">Free</span>
-            </p>
-
-            <p className="flex items-center justify-between">
-              <span className="text-[14px] font-[500]">Estimate for</span>
-              <span className="font-bold"><span className="font-bold">{context?.userData?.address_details[0]?.country}</span></span>
-            </p>
-
-            <p className="flex items-center justify-between">
-              <span className="text-[14px] font-[500]">Total</span>
-              <span className="text-primary font-bold">
-                {
-                  formatPrice(context.cartData?.length !== 0 ?
-                    context.cartData?.map(item => parseInt(item.price) * item.quantity)
-                      .reduce((total, value) => total + value, 0) : 0)
-                }
-              </span>
-            </p>
-
-            <br />
-
-            <Link to="/checkout">
-              <Button className="btn-org btn-lg w-full flex gap-2">
-                <BsFillBagCheckFill className="text-[20px]" /> Checkout
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
-};
-
-export default CartPage;
+}

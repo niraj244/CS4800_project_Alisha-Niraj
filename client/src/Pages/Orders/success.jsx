@@ -1,19 +1,49 @@
-import React, { useContext } from 'react';
-import Button from "@mui/material/Button";
-import { Link } from "react-router-dom";
+import { useContext, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { IoCheckmarkCircle, IoArrowForward } from 'react-icons/io5';
 import { MyContext } from '../../App';
+import { fetchDataFromApi } from '../../utils/api';
+import SEO from '../../components/SEO';
 
-export const OrderSuccess = () => {
-    const context = useContext(MyContext);
-    return (
-        <section className='w-full p-10 py-8 lg:py-20 flex items-center justify-center flex-col gap-2'>
-            <img src="/checked.png" className="w-[80px] sm:w-[120px]" />
-            <h3 className='mb-0 text-[20px] sm:text-[25px]'>Your order is placed</h3>
-            <p className='mt-0 mb-0'>Thank you for your payment.</p>
-            <p className='mt-0 text-center'>Order Invoice send to your email <b>{context?.userData?.email}</b></p>
-            <Link to="/">
-                <Button className="btn-org btn-border">Back to home</Button>
-            </Link>
-        </section>
-    )
+export function OrderSuccess() {
+  const ctx = useContext(MyContext);
+  const [lastOrder, setLastOrder] = useState(null);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    if (ctx.userData?._id) {
+      fetchDataFromApi('/api/order/order-list/orders?limit=1').then((res) => {
+        if (res?.data?.[0]) setLastOrder(res.data[0]);
+      });
+    }
+  }, [ctx.userData]);
+
+  return (
+    <>
+      <SEO title="Order Confirmed — VibeFit" description="" url="/order/success" />
+      <div className="container py-20 text-center max-w-lg">
+        <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-6">
+          <IoCheckmarkCircle size={48} className="text-success" />
+        </div>
+        <h1 className="font-display font-bold text-3xl mb-3">Order Confirmed!</h1>
+        <p className="text-text-muted mb-2">
+          Thank you for shopping with VibeFit. Your order has been placed and is being processed.
+        </p>
+        {lastOrder?._id && (
+          <p className="text-sm font-mono bg-surface-alt border border-border rounded-lg px-4 py-2 inline-block mt-3 mb-6">
+            Order #{lastOrder._id.slice(-8).toUpperCase()}
+          </p>
+        )}
+        <p className="text-sm text-text-muted mb-8">
+          A confirmation email has been sent to your registered email address.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link to="/my-orders" className="btn-accent flex items-center justify-center gap-2">
+            Track Order <IoArrowForward size={14} />
+          </Link>
+          <Link to="/shop" className="btn-outline">Continue Shopping</Link>
+        </div>
+      </div>
+    </>
+  );
 }
